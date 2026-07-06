@@ -418,3 +418,44 @@ class SteamImportResponseSerializer(serializers.Serializer[Any]):
     matched = GameSimpleListSerializer(many=True, help_text="List of matched games found in the database.")
     not_found = SteamImportNotFoundSerializer(many=True, help_text="List of games not found in the database.")
     total_imported = serializers.IntegerField(help_text="Total number of games retrieved from Steam before filtration.")
+
+
+class TitleImportRequestSerializer(serializers.Serializer[Any]):
+    """A serializer for the title import endpoint request body."""
+
+    titles = serializers.ListField(
+        child=serializers.CharField(max_length=255, help_text="A game title to match."),
+        min_length=1,
+        max_length=10,
+        help_text="Game titles to match against the catalogue, at most 10 per request.",
+    )
+
+
+class TitleImportMatchSerializer(serializers.Serializer[Any]):
+    """A serializer for a single candidate game matched to an imported title."""
+
+    id = serializers.IntegerField(help_text="The ID of the matched game.")
+    title = serializers.CharField(help_text="The title of the matched game.")
+    cover_image_id = serializers.CharField(help_text="The IGDB cover image ID of the matched game.")
+    already_in_list = serializers.BooleanField(
+        help_text="Whether the matched game is already on the requesting user's game list.",
+    )
+
+
+class TitleImportResultSerializer(serializers.Serializer[Any]):
+    """A serializer for the match candidates of a single imported title."""
+
+    title = serializers.CharField(help_text="The input title, echoed back verbatim.")
+    matches = TitleImportMatchSerializer(
+        many=True,
+        help_text="Up to three candidate games, best match first; empty when nothing matched well enough.",
+    )
+
+
+class TitleImportResponseSerializer(serializers.Serializer[Any]):
+    """A serializer for the title import endpoint response."""
+
+    results = TitleImportResultSerializer(
+        many=True,
+        help_text="One entry per input title, in input order.",
+    )

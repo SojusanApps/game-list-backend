@@ -2,6 +2,11 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.23.0] - 06.07.2026
+
+* Reworked fuzzy title matching to rank results correctly for misspelled queries: `pg_trgm` similarity is now used only to fetch a candidate pool, and Python re-ranks it with Damerau-Levenshtein similarity (`rapidfuzz`), with ties broken by the game's members count.
+* Added a title import endpoint (`POST /game-lists/title-import/`) that matches a pasted list of game titles against the catalogue, returning up to 3 candidate games (`id`, `title`, `cover_image_id`, `already_in_list`) per title. Mirrors the two-step Steam import flow: pick matches, then submit them to the existing bulk-create endpoint.
+
 ## v. [4.22.0] - 26.06.2026
 
 * Replaced `Makefile` with a `justfile` — migrated task runner from `make` to `just` with the same set of commands.

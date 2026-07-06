@@ -46,6 +46,7 @@ from my_game_list.games.models import (
     Platform,
     PlayerPerspective,
 )
+from my_game_list.games.search import ranked_title_match_pks
 from my_game_list.games.serializers import (
     CompanyDetailSerializer,
     CompanySerializer,
@@ -67,6 +68,8 @@ from my_game_list.games.serializers import (
     PlayerPerspectiveSerializer,
     ReleaseCalendarQuerySerializer,
     SteamImportResponseSerializer,
+    TitleImportRequestSerializer,
+    TitleImportResponseSerializer,
 )
 from my_game_list.my_game_list.permissions import IsAdminOrReadOnly
 
@@ -79,6 +82,7 @@ if TYPE_CHECKING:
 
 HIGHEST_NUMBER_OF_DAYS_IN_MONTH = 31
 MAX_GAMES_PER_DAY_IN_CALENDAR = 3
+MAX_MATCHES_PER_IMPORTED_TITLE = 3
 
 
 @extend_schema_view(
@@ -434,6 +438,59 @@ class GameListViewSet(ModelViewSet[GameList]):
             "total_imported": len(steam_games),
         }
         serializer = SteamImportResponseSerializer(response_data)
+        return Response(serializer.data)
+
+    @extend_schema(
+        description=(
+            "Match a pasted list of game titles against the catalogue (Title Import, step 1). "
+            "For each input title, in input order, returns up to three candidate games ranked "
+            "best match first; a title whose candidates all fall below the matching threshold "
+            "gets an empty matches list. Candidates already on the authenticated user's game "
+            "list are flagged with already_in_list. Stores nothing; submit the picked games "
+            "to the bulk-create endpoint to add them to the game list."
+        ),
+        request=TitleImportRequestSerializer,
+        responses={200: TitleImportResponseSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="title-import", filter_backends=[], pagination_class=None)
+    def title_import(self: Self, request: Request) -> Response:
+        """Return up to three catalogue candidates for each submitted game title."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        request_serializer = TitleImportRequestSerializer(data=request.data)
+        if not request_serializer.is_valid():
+            return Response(request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        titles: list[str] = request_serializer.validated_data["titles"]
+
+        matched_pks_per_title = [
+            ranked_title_match_pks(Game.objects.all(), title)[:MAX_MATCHES_PER_IMPORTED_TITLE] for title in titles
+        ]
+        matched_pks = {pk for pks in matched_pks_per_title for pk in pks}
+        games = Game.objects.in_bulk(matched_pks)
+        user_game_ids: set[int] = set(
+            GameList.objects.filter(user_id=request.user.pk, game_id__in=matched_pks).values_list(
+                "game_id",
+                flat=True,
+            ),
+        )
+
+        results = [
+            {
+                "title": title,
+                "matches": [
+                    {
+                        "id": pk,
+                        "title": games[pk].title,
+                        "cover_image_id": games[pk].cover_image_id,
+                        "already_in_list": pk in user_game_ids,
+                    }
+                    for pk in pks
+                ],
+            }
+            for title, pks in zip(titles, matched_pks_per_title, strict=True)
+        ]
+        serializer = TitleImportResponseSerializer({"results": results})
         return Response(serializer.data)
 
     @extend_schema(

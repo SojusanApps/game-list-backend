@@ -52,6 +52,7 @@ dependencies = [
     "opentelemetry-instrumentation-urllib>=0.63b1",
     "opentelemetry-instrumentation-urllib3>=0.63b1",
     "django-modeltranslation>=0.20.3",
+    "rapidfuzz==3.14.5",
 ]
 
 [build-system]

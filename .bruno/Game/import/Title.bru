@@ -1,0 +1,38 @@
+meta {
+  name: Title
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/game-lists/title-import/
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+body:json {
+  {
+    "titles": [
+        "7 Days to End with You",
+        "999: Nine Hours, Nine Persons, Nine Doors",
+        "A Hat in Time",
+        "A Little To The Left",
+        "A Vampyre Story",
+        "Ace Attorney Investigations 2",
+        "Ace Attorney Investigations: Miles Edgeworth",
+        "AdVenture Capitalist",
+        "Agent Hugo",
+        "Agent Hugo: Hula Holiday"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
