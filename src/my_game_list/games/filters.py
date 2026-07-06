@@ -2,8 +2,7 @@
 
 from typing import Any
 
-from django.contrib.postgres.search import TrigramSimilarity, TrigramWordSimilarity
-from django.db.models import ExpressionWrapper, FloatField, Q, QuerySet, Value
+from django.db.models import Q, QuerySet
 from django_filters import rest_framework as filters
 
 from my_game_list.games.models import (
@@ -23,7 +22,7 @@ from my_game_list.games.models import (
     Platform,
     PlayerPerspective,
 )
-from my_game_list.games.utils import normalize_title
+from my_game_list.games.search import filter_queryset_by_title
 from my_game_list.my_game_list.filters import BaseDictionaryFilterSet, BilingualModelMultipleChoiceFilter
 
 
@@ -103,20 +102,8 @@ class GameListFilterSet(filters.FilterSet):
     )
 
     def filter_title(self, queryset: QuerySet[Any], _name: str, value: str) -> QuerySet[Any]:
-        """Filter by game title using pg_trgm word similarity."""
-        normalized = normalize_title(value)
-        result: QuerySet[Any] = (
-            queryset.annotate(
-                rank=ExpressionWrapper(
-                    TrigramWordSimilarity(normalized, "game__search_title") * Value(0.7)
-                    + TrigramSimilarity("game__search_title", normalized) * Value(0.3),
-                    output_field=FloatField(),
-                ),
-            )
-            .filter(rank__gte=0.2)
-            .order_by("-rank")
-        )
-        return result
+        """Filter by game title using fuzzy matching, best match first."""
+        return filter_queryset_by_title(queryset, value, game_field="game__")
 
     def filter_publisher(self, queryset: QuerySet[Any], _name: str, value: str) -> QuerySet[Any]:
         """Filter by publisher name in English or Polish."""
@@ -217,20 +204,8 @@ class GameFilterSet(filters.FilterSet):
     )
 
     def filter_title(self, queryset: QuerySet[Any], _name: str, value: str) -> QuerySet[Any]:
-        """Filter by normalized title using pg_trgm word similarity."""
-        normalized = normalize_title(value)
-        result: QuerySet[Any] = (
-            queryset.annotate(
-                rank=ExpressionWrapper(
-                    TrigramWordSimilarity(normalized, "search_title") * Value(0.7)
-                    + TrigramSimilarity("search_title", normalized) * Value(0.3),
-                    output_field=FloatField(),
-                ),
-            )
-            .filter(rank__gte=0.2)
-            .order_by("-rank")
-        )
-        return result
+        """Filter by game title using fuzzy matching, best match first."""
+        return filter_queryset_by_title(queryset, value)
 
     def filter_publisher(self, queryset: QuerySet[Any], _name: str, value: str) -> QuerySet[Any]:
         """Filter by publisher name in English or Polish."""
