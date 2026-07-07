@@ -1,0 +1,16 @@
+meta {
+  name: Withdraw Translation-Suggestion
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/translation-suggestions/{{translationSuggestionId}}/withdraw/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}

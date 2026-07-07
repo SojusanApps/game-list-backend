@@ -1,0 +1,16 @@
+meta {
+  name: Get Translation-Suggestion
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/translation-suggestions/{{translationSuggestionId}}/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}

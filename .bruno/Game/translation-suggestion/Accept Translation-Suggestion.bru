@@ -1,0 +1,16 @@
+meta {
+  name: Accept Translation-Suggestion
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/translation-suggestions/{{translationSuggestionId}}/accept/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}

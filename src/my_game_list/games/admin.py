@@ -20,6 +20,7 @@ from my_game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    TranslationSuggestion,
 )
 from my_game_list.my_game_list.admin import BaseDictionaryModelAdmin
 
@@ -186,3 +187,14 @@ class GameTypeAdmin(BaseDictionaryModelAdmin):
     readonly_fields: ClassVar[tuple[str, ...]] = ("id", "igdb_id", "igdb_updated_at")
     search_fields: ClassVar[tuple[str, ...]] = ("type_en", "type_pl")
     list_display: tuple[str, ...] = (*readonly_fields, *search_fields)
+
+
+@admin.register(TranslationSuggestion)
+class TranslationSuggestionAdmin(admin.ModelAdmin[TranslationSuggestion]):
+    """Admin model for the translation suggestion model."""
+
+    readonly_fields = ("id", "current_value", "submitted_at", "reviewed_at")
+    search_fields = (*readonly_fields, "game__title_en", "game__title_pl", "submitted_by__username")
+    raw_id_fields = ("game", "submitted_by", "reviewed_by")
+    list_filter = ("field", "status", "submitted_at")
+    list_display = (*readonly_fields, *list_filter, *raw_id_fields)

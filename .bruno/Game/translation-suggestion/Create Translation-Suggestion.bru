@@ -1,0 +1,28 @@
+meta {
+  name: Create Translation-Suggestion
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/translation-suggestions/
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+body:json {
+  {
+    "game": 1,
+    "field": "summary",
+    "proposed_value": "Nowy polski opis gry."
+  }
+}
+
+vars:post-response {
+  translationSuggestionId: res.body.id
+}

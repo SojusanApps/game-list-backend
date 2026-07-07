@@ -1,0 +1,22 @@
+meta {
+  name: Reject Translation-Suggestion
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/translation-suggestions/{{translationSuggestionId}}/reject/
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+body:json {
+  {
+    "rejection_reason": "Zawiera błąd gramatyczny."
+  }
+}

@@ -6,12 +6,15 @@ import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from my_game_list.games.filters import (
     CompanyFilterSet,
@@ -28,6 +31,7 @@ from my_game_list.games.filters import (
     GenreFilterSet,
     PlatformFilterSet,
     PlayerPerspectiveFilterSet,
+    TranslationSuggestionFilterSet,
 )
 from my_game_list.games.models import (
     Company,
@@ -45,7 +49,9 @@ from my_game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    TranslationSuggestion,
 )
+from my_game_list.games.permissions import IsSuggestionSubmitter
 from my_game_list.games.search import ranked_title_match_pks
 from my_game_list.games.serializers import (
     CompanyDetailSerializer,
@@ -70,8 +76,12 @@ from my_game_list.games.serializers import (
     SteamImportResponseSerializer,
     TitleImportRequestSerializer,
     TitleImportResponseSerializer,
+    TranslationSuggestionCreateSerializer,
+    TranslationSuggestionSerializer,
 )
 from my_game_list.my_game_list.permissions import IsAdminOrReadOnly
+from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
+from my_game_list.notifications.utils import notify_send
 
 if TYPE_CHECKING:
     import datetime
@@ -606,6 +616,162 @@ class GameReviewViewSet(ModelViewSet[GameReview]):
             ]
             else GameReviewSerializer
         )
+
+
+@extend_schema_view(
+    list=extend_schema(
+        description=(
+            "List translation suggestions. Every suggestion is visible to any authenticated user, "
+            "regardless of who submitted it or its status (pending, accepted, rejected, withdrawn)."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                description="Filter by exact suggestion ID.",
+            ),
+            OpenApiParameter(
+                name="game",
+                description="Filter by the ID of the game the suggestion targets.",
+            ),
+            OpenApiParameter(
+                name="field",
+                description="Filter by the targeted Game field. Accepted values: title, summary.",
+            ),
+            OpenApiParameter(
+                name="status",
+                description="Filter by lifecycle status. Accepted values: pending, accepted, rejected, withdrawn.",
+            ),
+            OpenApiParameter(
+                name="submitted_by",
+                description="Filter by the ID of the user who submitted the suggestion.",
+            ),
+        ],
+    ),
+    retrieve=extend_schema(
+        description="Retrieve a single translation suggestion by ID.",
+    ),
+    create=extend_schema(
+        description=(
+            "Submit a new translation suggestion for a game's title or summary. "
+            "The current value is snapshotted server-side from the live game field, "
+            "and the suggestion is always created with pending status, attributed to the requesting user."
+        ),
+    ),
+)
+class TranslationSuggestionViewSet(
+    GenericViewSet[TranslationSuggestion],
+    ListModelMixin,
+    RetrieveModelMixin,
+    CreateModelMixin,
+):
+    """A ViewSet for submitting and browsing translation suggestions."""
+
+    queryset = TranslationSuggestion.objects.all()
+    permission_classes = (IsAuthenticated,)
+    filterset_class = TranslationSuggestionFilterSet
+
+    def get_serializer_class(
+        self: Self,
+    ) -> type[TranslationSuggestionCreateSerializer | TranslationSuggestionSerializer]:
+        """Get the serializer class for the translation suggestion viewset."""
+        return TranslationSuggestionCreateSerializer if self.action == "create" else TranslationSuggestionSerializer
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAuthenticated, IsSuggestionSubmitter],
+    )
+    def withdraw(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Withdraw a pending suggestion. Only the original submitter may call this."""
+        suggestion = self.get_object()
+        if suggestion.status != TranslationSuggestion.Status.PENDING:
+            message = "Only a pending suggestion can be withdrawn."
+            raise ValidationError(message)
+        suggestion.status = TranslationSuggestion.Status.WITHDRAWN
+        suggestion.save(update_fields=["status"])
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAdminUser],
+    )
+    def accept(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Accept a pending suggestion, applying it to the game and superseding sibling suggestions."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        suggestion = self.get_object()
+        if suggestion.status != TranslationSuggestion.Status.PENDING:
+            message = "Only a pending suggestion can be accepted."
+            raise ValidationError(message)
+
+        now = timezone.now()
+        with transaction.atomic():
+            game = suggestion.game
+            setattr(game, f"{suggestion.field}_pl", suggestion.proposed_value)
+            game.save()
+
+            suggestion.status = TranslationSuggestion.Status.ACCEPTED
+            suggestion.reviewed_by = request.user
+            suggestion.reviewed_at = now
+            suggestion.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+
+            TranslationSuggestion.objects.filter(
+                game=game,
+                field=suggestion.field,
+                status=TranslationSuggestion.Status.PENDING,
+            ).exclude(pk=suggestion.pk).update(
+                status=TranslationSuggestion.Status.REJECTED,
+                reviewed_by=request.user,
+                reviewed_at=now,
+            )
+
+        notify_send(
+            sender=request.user,
+            recipient=suggestion.submitted_by,
+            verb=NotificationVerb.TRANSLATION_SUGGESTION_ACCEPTED,
+            target=suggestion,
+            category=NotificationCategory.TRANSLATION_SUGGESTION,
+        )
+
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsAdminUser],
+    )
+    def reject(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Reject a pending suggestion, optionally with a reason. Never modifies the Game record."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        suggestion = self.get_object()
+        if suggestion.status != TranslationSuggestion.Status.PENDING:
+            message = "Only a pending suggestion can be rejected."
+            raise ValidationError(message)
+
+        rejection_reason = request.data.get("rejection_reason", "")
+        suggestion.status = TranslationSuggestion.Status.REJECTED
+        suggestion.reviewed_by = request.user
+        suggestion.reviewed_at = timezone.now()
+        suggestion.rejection_reason = rejection_reason
+        suggestion.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason"])
+
+        notify_send(
+            sender=request.user,
+            recipient=suggestion.submitted_by,
+            verb=NotificationVerb.TRANSLATION_SUGGESTION_REJECTED,
+            target=suggestion,
+            category=NotificationCategory.TRANSLATION_SUGGESTION,
+            description=rejection_reason,
+        )
+
+        serializer = self.get_serializer(suggestion)
+        return Response(serializer.data)
 
 
 @extend_schema_view(

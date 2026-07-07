@@ -21,6 +21,7 @@ from my_game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    TranslationSuggestion,
 )
 from my_game_list.games.search import filter_queryset_by_title
 from my_game_list.my_game_list.filters import BaseDictionaryFilterSet, BilingualModelMultipleChoiceFilter
@@ -341,3 +342,22 @@ class GameMediaFilterSet(BaseDictionaryFilterSet):
         """Meta class for GameMediaFilterSet."""
 
         model = GameMedia
+
+
+class TranslationSuggestionFilterSet(filters.FilterSet):
+    """Filter set for translation suggestion model."""
+
+    game = filters.NumberFilter(field_name="game__id")
+    submitted_by = filters.NumberFilter(field_name="submitted_by__id")
+
+    class Meta:
+        """Meta class for translation suggestion filter set."""
+
+        model = TranslationSuggestion
+        fields = (
+            "id",
+            "game",
+            "field",
+            "status",
+            "submitted_by",
+        )
