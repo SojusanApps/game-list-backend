@@ -247,6 +247,10 @@ SPECTACULAR_SETTINGS = {
             ),
         },
     ],
+    "ENUM_NAME_OVERRIDES": {
+        "GameListStatusEnum": "my_game_list.games.models.GameListStatus",
+        "TranslationSuggestionStatusEnum": "my_game_list.games.models.TranslationSuggestionStatus",
+    },
 }
 
 MGL_LOG_DIR_PATH = oeg("MGL_LOG_DIR_PATH", BASE_DIR.parent.parent / "logs")

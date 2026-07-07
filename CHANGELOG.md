@@ -2,6 +2,20 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.24.0] - 07.07.2026
+
+* Added a `TranslationSuggestion` model and endpoints (`/game/translation-suggestions/`) letting authenticated users propose a corrected Polish `title` or `summary` for a game.
+  * `GET`/`POST` on the list endpoint: full history (pending/accepted/rejected/withdrawn) is visible to any authenticated user; creating a suggestion snapshots the game's current value server-side and validates `proposed_value` against the target field's max length.
+  * A user can only have one pending suggestion per game+field (enforced by a conditional `UniqueConstraint`), but different users may submit competing suggestions for the same game+field.
+  * `POST /{id}/withdraw/` — submitter-only, cancels a pending suggestion.
+  * `POST /{id}/accept/` — admin-only, applies the proposed value to the game (via `Game.save()`, so `search_title` recomputes) and auto-rejects sibling pending suggestions for the same game+field.
+  * `POST /{id}/reject/` — admin-only, with an optional `rejection_reason`.
+  * Accept/reject send a notification to the submitter (new `NotificationCategory.TRANSLATION_SUGGESTION` and matching `NotificationVerb` entries).
+  * `game` and `submitted_by`/`reviewed_by` are returned as nested objects (`GameReferenceSerializer`, `UserSimpleSerializer`) on list/retrieve/withdraw/accept/reject responses.
+  * Registered in Django admin and added Bruno requests under `Game/translation-suggestion/`.
+* Added `ENUM_NAME_OVERRIDES` to `SPECTACULAR_SETTINGS` to resolve an OpenAPI enum-naming collision between `GameList.status` and the new `TranslationSuggestion.status`.
+* Filled in missing/fuzzy Polish translations in `locale/pl/LC_MESSAGES/django.po`.
+
 ## v. [4.23.0] - 06.07.2026
 
 * Reworked fuzzy title matching to rank results correctly for misspelled queries: `pg_trgm` similarity is now used only to fetch a candidate pool, and Python re-ranks it with Damerau-Levenshtein similarity (`rapidfuzz`), with ties broken by the game's members count.

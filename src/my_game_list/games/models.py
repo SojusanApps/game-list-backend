@@ -473,6 +473,103 @@ class ExternalGame(BaseModel, IGDBModel):
         verbose_name_plural = _("external games")
 
 
+class TranslationSuggestionField(models.TextChoices):
+    """The Game fields that can be targeted by a translation suggestion."""
+
+    TITLE = "title", _("Title")
+    SUMMARY = "summary", _("Summary")
+
+
+class TranslationSuggestionStatus(models.TextChoices):
+    """The lifecycle states of a translation suggestion."""
+
+    PENDING = "pending", _("Pending")
+    ACCEPTED = "accepted", _("Accepted")
+    REJECTED = "rejected", _("Rejected")
+    WITHDRAWN = "withdrawn", _("Withdrawn")
+
+
+class TranslationSuggestion(BaseModel):
+    """A user-submitted proposal for a new Polish value of a Game's title or summary."""
+
+    Field = TranslationSuggestionField
+    Status = TranslationSuggestionStatus
+
+    game = models.ForeignKey(
+        "Game",
+        on_delete=models.CASCADE,
+        related_name="translation_suggestions",
+        help_text="The game this suggestion targets.",
+    )
+    field = models.CharField(
+        _("field"),
+        max_length=10,
+        choices=TranslationSuggestionField.choices,
+        help_text="The Game field this suggestion proposes a new Polish value for.",
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="translation_suggestions",
+        help_text="The user who submitted this suggestion.",
+    )
+    current_value = models.TextField(
+        _("current value"),
+        blank=True,
+        help_text="A snapshot of the field's value at the time this suggestion was submitted.",
+    )
+    proposed_value = models.TextField(
+        _("proposed value"),
+        blank=True,
+        help_text="The proposed new Polish value for the field.",
+    )
+    status = models.CharField(
+        _("status"),
+        max_length=10,
+        choices=TranslationSuggestionStatus.choices,
+        default=TranslationSuggestionStatus.PENDING,
+        help_text="The current lifecycle state of this suggestion.",
+    )
+    submitted_at = models.DateTimeField(_("submitted at"), auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_translation_suggestions",
+        null=True,
+        blank=True,
+        help_text="The admin who accepted or rejected this suggestion.",
+    )
+    reviewed_at = models.DateTimeField(
+        _("reviewed at"),
+        null=True,
+        blank=True,
+        help_text="The time this suggestion was accepted or rejected.",
+    )
+    rejection_reason = models.CharField(
+        _("rejection reason"),
+        max_length=500,
+        blank=True,
+        help_text="Optional reason given by the admin when rejecting this suggestion.",
+    )
+
+    class Meta(BaseModel.Meta):
+        """Meta data for the translation suggestion model."""
+
+        verbose_name = _("translation suggestion")
+        verbose_name_plural = _("translation suggestions")
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=("game", "field", "submitted_by"),
+                condition=models.Q(status=TranslationSuggestionStatus.PENDING),
+                name="unique_pending_suggestion_per_user_game_field",
+            ),
+        ]
+
+    def __str__(self: Self) -> str:
+        """String representation of the translation suggestion model."""
+        return f"{self.game.title} - {self.field} ({self.status})"
+
+
 class Game(BaseModel, IGDBModel):
     """A model containing data about games."""
 

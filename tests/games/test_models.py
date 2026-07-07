@@ -1,6 +1,9 @@
 """Tests for games models."""
 
+from typing import TYPE_CHECKING
+
 import pytest
+from django.db import IntegrityError
 from django.utils.translation import override
 from model_bakery import baker
 
@@ -13,7 +16,13 @@ from my_game_list.games.models import (
     GameReview,
     Genre,
     Platform,
+    TranslationSuggestion,
+    TranslationSuggestionField,
+    TranslationSuggestionStatus,
 )
+
+if TYPE_CHECKING:
+    from my_game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -104,3 +113,38 @@ def test_company_slug_uses_english_name_when_polish_is_active() -> None:
     with override("pl"):
         company = baker.make(Company, name_en="CD Projekt", name_pl="CD Projekt PL", slug="")
     assert company.slug == "cd-projekt"
+
+
+@pytest.mark.django_db()
+def test_translation_suggestion_dunder_str(game_fixture: Game) -> None:
+    """Test the `TranslationSuggestion` dunder str method."""
+    suggestion = baker.make(TranslationSuggestion, game=game_fixture, field=TranslationSuggestionField.SUMMARY)
+    assert str(suggestion) == f"{game_fixture.title} - {suggestion.field} ({suggestion.status})"
+
+
+@pytest.mark.django_db()
+def test_translation_suggestion_unique_pending_constraint_blocks_duplicate_at_db_level(
+    game_fixture: Game,
+    user_fixture: UserModel,
+) -> None:
+    """The conditional UniqueConstraint blocks a second pending row for the same user+game+field.
+
+    This bypasses the serializer entirely to prove the invariant is enforced by the database,
+    not just by application-level validation (which could otherwise be raced).
+    """
+    baker.make(
+        TranslationSuggestion,
+        game=game_fixture,
+        field=TranslationSuggestionField.SUMMARY,
+        submitted_by=user_fixture,
+        status=TranslationSuggestionStatus.PENDING,
+    )
+
+    with pytest.raises(IntegrityError):
+        baker.make(
+            TranslationSuggestion,
+            game=game_fixture,
+            field=TranslationSuggestionField.SUMMARY,
+            submitted_by=user_fixture,
+            status=TranslationSuggestionStatus.PENDING,
+        )

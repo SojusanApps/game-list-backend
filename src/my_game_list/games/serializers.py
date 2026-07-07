@@ -20,10 +20,12 @@ from my_game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    TranslationSuggestion,
+    TranslationSuggestionField,
 )
 from my_game_list.my_game_list.serializers import BaseDictionarySerializer
 from my_game_list.users.models import User
-from my_game_list.users.serializers import UserSerializer
+from my_game_list.users.serializers import UserSerializer, UserSimpleSerializer
 
 
 class CompanySimpleNameSerializer(serializers.ModelSerializer[Company]):
@@ -459,3 +461,105 @@ class TitleImportResponseSerializer(serializers.Serializer[Any]):
         many=True,
         help_text="One entry per input title, in input order.",
     )
+
+
+TRANSLATION_SUGGESTION_FIELD_MAX_LENGTHS: dict[str, int] = {
+    TranslationSuggestionField.TITLE: 255,
+    TranslationSuggestionField.SUMMARY: 2000,
+}
+
+
+class GameReferenceSerializer(serializers.ModelSerializer[Game]):
+    """A minimal reference to a game: id, title, slug, and cover image id."""
+
+    class Meta:
+        """Meta data for the game reference serializer."""
+
+        model = Game
+        fields = ("id", "title", "slug", "cover_image_id")
+
+
+class TranslationSuggestionSerializer(serializers.ModelSerializer[TranslationSuggestion]):
+    """A serializer for reading translation suggestions."""
+
+    game = GameReferenceSerializer(read_only=True)
+    submitted_by = UserSimpleSerializer(read_only=True)
+    reviewed_by = UserSimpleSerializer(read_only=True)
+
+    class Meta:
+        """Meta data for the translation suggestion serializer."""
+
+        model = TranslationSuggestion
+        fields = (
+            "id",
+            "game",
+            "field",
+            "submitted_by",
+            "current_value",
+            "proposed_value",
+            "status",
+            "submitted_at",
+            "reviewed_by",
+            "reviewed_at",
+            "rejection_reason",
+        )
+        read_only_fields = fields
+
+
+class TranslationSuggestionCreateSerializer(serializers.ModelSerializer[TranslationSuggestion]):
+    """A serializer for submitting a new translation suggestion."""
+
+    class Meta:
+        """Meta data for the translation suggestion create serializer."""
+
+        model = TranslationSuggestion
+        fields = (
+            "id",
+            "game",
+            "field",
+            "proposed_value",
+            "submitted_by",
+            "current_value",
+            "status",
+            "submitted_at",
+        )
+        read_only_fields = ("id", "submitted_by", "current_value", "status", "submitted_at")
+
+    def validate(self: Self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Validate that the proposed value fits within the target field's max length.
+
+        Also validates that the requesting user does not already have a pending suggestion
+        for the same game+field.
+        """
+        field: str = attrs["field"]
+        max_length = TRANSLATION_SUGGESTION_FIELD_MAX_LENGTHS[field]
+        proposed_value: str = attrs.get("proposed_value", "")
+        if len(proposed_value) > max_length:
+            message = f"Ensure this field has no more than {max_length} characters."
+            raise serializers.ValidationError({"proposed_value": message})
+
+        request = self.context["request"]
+        if TranslationSuggestion.objects.filter(
+            game=attrs["game"],
+            field=field,
+            submitted_by=request.user,
+            status=TranslationSuggestion.Status.PENDING,
+        ).exists():
+            message = "You already have a pending suggestion for this game and field."
+            raise serializers.ValidationError({"non_field_errors": [message]})
+
+        return attrs
+
+    def create(self: Self, validated_data: dict[str, Any]) -> TranslationSuggestion:
+        """Create a translation suggestion, snapshotting the game's current value server-side."""
+        request = self.context["request"]
+        game: Game = validated_data["game"]
+        field: str = validated_data["field"]
+        current_value = getattr(game, f"{field}_pl") or ""
+        return TranslationSuggestion.objects.create(
+            game=game,
+            field=field,
+            proposed_value=validated_data["proposed_value"],
+            submitted_by=request.user,
+            current_value=current_value,
+        )
