@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, ClassVar, Self
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -116,9 +116,10 @@ class FriendshipRequest(BaseModel):
         Returns:
             bool: True after successful operation.
         """
-        Friendship.objects.create(user=self.sender, friend=self.receiver)
-        Friendship.objects.create(user=self.receiver, friend=self.sender)
-        self.delete()
+        with transaction.atomic():
+            Friendship.objects.create(user=self.sender, friend=self.receiver)
+            Friendship.objects.create(user=self.receiver, friend=self.sender)
+            self.delete()
 
         return True
 
