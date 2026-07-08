@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.24.1] - 08.07.2026
+
+* Added missing `translation.atomic`.
+
 ## v. [4.24.0] - 07.07.2026
 
 * Added a `TranslationSuggestion` model and endpoints (`/game/translation-suggestions/`) letting authenticated users propose a corrected Polish `title` or `summary` for a game.

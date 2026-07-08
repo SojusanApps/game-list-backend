@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from django.db import transaction
 from django.db.models import Avg, Count, Sum
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -42,18 +43,20 @@ def update_game_stats(
 ) -> None:
     """Update GameStats when a GameList is modified."""
     game = instance.game
-    stats, _ = GameStats.objects.get_or_create(game=game)
 
-    # Calculate aggregates
-    aggregates = GameList.objects.filter(game=game).aggregate(
-        total_score=Sum("score"),
-        count_score=Count("score"),
-        avg_score=Avg("score"),
-        total_members=Count("id"),
-    )
+    with transaction.atomic():
+        stats, _ = GameStats.objects.get_or_create(game=game)
 
-    stats.score_sum = aggregates["total_score"] or 0
-    stats.score_count = aggregates["count_score"] or 0
-    stats.average_score = aggregates["avg_score"] or 0.0
-    stats.members_count = aggregates["total_members"] or 0
-    stats.save()
+        # Calculate aggregates
+        aggregates = GameList.objects.filter(game=game).aggregate(
+            total_score=Sum("score"),
+            count_score=Count("score"),
+            avg_score=Avg("score"),
+            total_members=Count("id"),
+        )
+
+        stats.score_sum = aggregates["total_score"] or 0
+        stats.score_count = aggregates["count_score"] or 0
+        stats.average_score = aggregates["avg_score"] or 0.0
+        stats.members_count = aggregates["total_members"] or 0
+        stats.save()
