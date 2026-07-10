@@ -175,6 +175,11 @@ class GameList(BaseModel):
         blank=True,
         help_text="Optional personal notes about this game.",
     )
+    is_moderated = models.BooleanField(
+        _("is moderated"),
+        default=False,
+        help_text="Whether an accepted Report has flagged this note's text for masking.",
+    )
     completed_at = models.DateField(
         _("completed at"),
         null=True,
@@ -237,6 +242,11 @@ class GameReview(BaseModel):
         blank=True,
         max_length=1000,
         help_text="The review text.",
+    )
+    is_moderated = models.BooleanField(
+        _("is moderated"),
+        default=False,
+        help_text="Whether an accepted Report has flagged this review's text for masking.",
     )
 
     game = models.ForeignKey(
@@ -522,6 +532,11 @@ class TranslationSuggestion(BaseModel):
         _("proposed value"),
         blank=True,
         help_text="The proposed new Polish value for the field.",
+    )
+    is_moderated = models.BooleanField(
+        _("is moderated"),
+        default=False,
+        help_text="Whether an accepted Report has flagged this suggestion's proposed_value for masking.",
     )
     status = models.CharField(
         _("status"),

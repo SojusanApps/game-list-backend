@@ -12,6 +12,7 @@ from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
 from my_game_list.games.models import GameListStatus
+from my_game_list.moderation.masking import MODERATION_PLACEHOLDER_USERNAME, mask_if_moderated
 from my_game_list.users.models import User as UserModel
 
 if TYPE_CHECKING:
@@ -20,6 +21,41 @@ if TYPE_CHECKING:
     from rest_framework.utils.serializer_helpers import ReturnDict
 
 User: type[UserModel] = get_user_model()
+
+
+def _masked_gravatar_url(instance: UserModel, viewer: UserModel) -> str:
+    """Compute gravatar_url for a viewer, composing the two independent avatar-hiding triggers.
+
+    has_moderated_avatar hides the avatar from literally everyone, including the owner and staff.
+    is_banned alone hides it from other viewers only, exempting the owner (and staff) as usual.
+    """
+    if instance.has_moderated_avatar:
+        return mask_if_moderated(
+            instance.gravatar_url,
+            moderated=True,
+            owner=instance,
+            viewer=viewer,
+            exempt_owner=False,
+            placeholder="",
+        )
+    return mask_if_moderated(
+        instance.gravatar_url,
+        moderated=instance.is_banned,
+        owner=instance,
+        viewer=viewer,
+        placeholder="",
+    )
+
+
+def _masked_username(instance: UserModel, viewer: UserModel) -> str:
+    """Mask username for other viewers if it's moderated or the user is banned. Standard exempt_owner rule."""
+    return mask_if_moderated(
+        instance.username,
+        moderated=instance.has_moderated_username or instance.is_banned,
+        owner=instance,
+        viewer=viewer,
+        placeholder=MODERATION_PLACEHOLDER_USERNAME,
+    )
 
 
 class UserCreateSerializer(serializers.ModelSerializer[UserModel]):
@@ -51,17 +87,32 @@ class UserCreateSerializer(serializers.ModelSerializer[UserModel]):
 class UserSimpleSerializer(serializers.ModelSerializer[UserModel]):
     """Simple user serializer."""
 
+    gravatar_url = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+
     class Meta:
         """Meta data for the class."""
 
         model = User
         fields = ("id", "username", "gravatar_url", "slug", "is_staff")
 
+    def get_gravatar_url(self: Self, instance: UserModel) -> str:
+        """Mask the avatar for other viewers per the two independent avatar-hiding triggers."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_gravatar_url(instance, viewer)
+
+    def get_username(self: Self, instance: UserModel) -> str:
+        """Mask the username for other viewers if it's moderated or the user is banned."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_username(instance, viewer)
+
 
 class UserSerializer(serializers.ModelSerializer[UserModel]):
     """Serializer for listing the user model."""
 
     gender = serializers.CharField(source="get_gender_display", read_only=True)
+    gravatar_url = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the class."""
@@ -80,7 +131,17 @@ class UserSerializer(serializers.ModelSerializer[UserModel]):
             "slug",
             "is_staff",
         )
-        read_only_fields = ("id", "gravatar_url", "last_login", "last_active", "date_joined", "slug")
+        read_only_fields = ("id", "last_login", "last_active", "date_joined", "slug")
+
+    def get_gravatar_url(self: Self, instance: UserModel) -> str:
+        """Mask the avatar for other viewers per the two independent avatar-hiding triggers."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_gravatar_url(instance, viewer)
+
+    def get_username(self: Self, instance: UserModel) -> str:
+        """Mask the username for other viewers if it's moderated or the user is banned."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_username(instance, viewer)
 
 
 class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
@@ -90,6 +151,9 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
     game_list_statistics = serializers.SerializerMethodField()
     friends = serializers.SerializerMethodField()
     latest_game_list_updates = serializers.SerializerMethodField()
+    gravatar_url = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    warning_count = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the class."""
@@ -109,7 +173,31 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
             "latest_game_list_updates",
             "slug",
             "is_staff",
+            "warning_count",
         )
+
+    def get_gravatar_url(self: Self, instance: UserModel) -> str:
+        """Mask the avatar for other viewers per the two independent avatar-hiding triggers."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_gravatar_url(instance, viewer)
+
+    def get_username(self: Self, instance: UserModel) -> str:
+        """Mask the username for other viewers if it's moderated or the user is banned."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_username(instance, viewer)
+
+    def get_warning_count(self: Self, instance: UserModel) -> int | None:
+        """Get the number of moderation warnings issued to this user.
+
+        Restricted to the profile owner and staff - a public warning count would be a shaming
+        vector, the same reasoning that keeps is_banned unexposed everywhere in this feature.
+        Returns None (not 0) for other viewers, so "hidden" is never confused with "no warnings".
+        """
+        viewer: UserModel = self.context["request"].user
+        if viewer != instance and not viewer.is_staff:
+            return None
+
+        return instance.warnings.count()
 
     @extend_schema_field(
         inline_serializer(

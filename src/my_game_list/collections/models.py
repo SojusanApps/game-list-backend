@@ -64,6 +64,11 @@ class Collection(BaseModel):
         default=False,
         help_text="Whether the collection is marked as a favorite by its owner.",
     )
+    is_moderated = models.BooleanField(
+        _("is moderated"),
+        default=False,
+        help_text="Whether an accepted Report has flagged this collection's name/description for masking.",
+    )
     visibility = models.CharField(
         _("visibility"),
         max_length=3,
@@ -161,6 +166,11 @@ class CollectionItem(BaseModel):
         blank=True,
         max_length=500,
         help_text="Optional notes or justification for this item's position in the collection.",
+    )
+    is_moderated = models.BooleanField(
+        _("is moderated"),
+        default=False,
+        help_text="Whether an accepted Report has flagged this item's note for masking.",
     )
     created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
     last_modified_at = models.DateTimeField(_("last modified"), auto_now=True)

@@ -2,6 +2,24 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.25.0] - 10.07.2026
+
+* Added a user reporting and content moderation system.
+  * New `moderation` app with `Report` and `ModerationWarning` models, and endpoints under `/moderation/reports/`.
+    * `POST`/`GET` on the list endpoint — any authenticated user can report another user's `avatar`, `username`, `GameReview`, `TranslationSuggestion`, a `GameList` note, a `Collection` (name+description together), or a `CollectionItem` note (`target_type`). A user can't report their own content, and can't file a second pending report against the same target while their first is still pending.
+    * Non-staff users only see reports they personally filed; staff see every report. List supports filtering by `id`, `target_type`, `status`, `reported_by`, and `reported_user`.
+    * `POST /{id}/accept/` and `POST /{id}/reject/` — admin-only. Accepting flags the target as moderated and issues exactly one `ModerationWarning`; a user's 3rd warning automatically bans them (`User.is_banned`).
+    * `reported_by`, `reported_user`, and `reviewed_by` are returned as nested `UserSimpleSerializer` objects.
+  * Moderation is enforced entirely at read time — nothing is ever deleted or rewritten. A shared `mask_if_moderated` helper (`moderation/masking.py`) replaces `GameReview.review`, `GameList.description`, `TranslationSuggestion.proposed_value`, `Collection.name`/`description`, `CollectionItem.description`, `User.username`, and `User.gravatar_url` with a placeholder for any viewer who isn't the content's owner or staff.
+    * A banned user's content is masked for every other viewer across all of the above, not just the specific items that were reported.
+    * A moderated avatar (`User.has_moderated_avatar`) is hidden from literally everyone, including its own owner and staff — the one field with no owner/staff exemption, since avatar reports are for illegal-content cases.
+    * Placeholder text respects the request's `Accept-Language` header (previously would have been frozen to whichever language was active at process startup); Polish translations added.
+  * Added `warning_count` to `UserDetailSerializer`, restricted to the profile owner and staff (`null` for other viewers) to avoid a public shaming vector.
+  * Registered `Report` and `ModerationWarning` in Django admin.
+  * Added an `ENUM_NAME_OVERRIDES` entry for `Report.status` (`ReportStatusEnum`) to resolve an OpenAPI enum-naming collision.
+  * Filled in missing/fuzzy Polish translations for the new moderation strings in `locale/pl/LC_MESSAGES/django.po`.
+* Fixed `GameListViewSet.bulk_create` and `.export` not passing serializer context, which broke `gravatar_url`/`username` masking on those endpoints (caught while wiring moderation into `GameListSerializer`); added `export` test coverage, which previously had none.
+
 ## v. [4.24.1] - 08.07.2026
 
 * Added missing `translation.atomic`.

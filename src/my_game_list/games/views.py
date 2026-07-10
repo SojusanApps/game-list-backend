@@ -518,7 +518,7 @@ class GameListViewSet(ModelViewSet[GameList]):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         queryset = self.get_queryset().filter(user_id=request.user.pk)
-        serializer = GameListSerializer(queryset, many=True)
+        serializer = GameListSerializer(queryset, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
     @extend_schema(
@@ -549,7 +549,7 @@ class GameListViewSet(ModelViewSet[GameList]):
         with transaction.atomic():
             instances = [s.save() for s in serializers_list]
 
-        result = GameListSerializer(instances, many=True)
+        result = GameListSerializer(instances, many=True, context=self.get_serializer_context())
         return Response(result.data, status=status.HTTP_201_CREATED)
 
 

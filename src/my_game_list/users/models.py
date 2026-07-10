@@ -48,6 +48,21 @@ class User(BaseModel, AbstractUser):
         blank=True,
         help_text="Timestamp of the user's most recent activity. Null if never recorded.",
     )
+    is_banned = models.BooleanField(
+        _("is banned"),
+        default=False,
+        help_text="Whether this user has accumulated 3 warnings. Distinct from is_active, which gates login.",
+    )
+    has_moderated_avatar = models.BooleanField(
+        _("has moderated avatar"),
+        default=False,
+        help_text="Whether an accepted avatar Report hides gravatar_url for literally everyone, including self.",
+    )
+    has_moderated_username = models.BooleanField(
+        _("has moderated username"),
+        default=False,
+        help_text="Whether an accepted username Report masks the username for other viewers.",
+    )
 
     # Delete the unwanted fields from the `AbstractUser`
     # first and last name of the user are sensitive data that will not be used in the application

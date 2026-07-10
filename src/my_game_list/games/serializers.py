@@ -23,6 +23,7 @@ from my_game_list.games.models import (
     TranslationSuggestion,
     TranslationSuggestionField,
 )
+from my_game_list.moderation.masking import mask_if_moderated
 from my_game_list.my_game_list.serializers import BaseDictionarySerializer
 from my_game_list.users.models import User
 from my_game_list.users.serializers import UserSerializer, UserSimpleSerializer
@@ -111,6 +112,7 @@ class GameListSerializer(serializers.ModelSerializer[GameList]):
     title = serializers.CharField(source="game.title", read_only=True)
     game_cover_image = serializers.CharField(source="game.cover_image_id", read_only=True)
     owned_on = GameMediaSerializer(many=True)
+    description = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the game list serializer."""
@@ -133,6 +135,16 @@ class GameListSerializer(serializers.ModelSerializer[GameList]):
             "game_cover_image",
             "user",
             "owned_on",
+        )
+
+    def get_description(self: Self, instance: GameList) -> str:
+        """Mask the note text for other viewers if it's moderated or its author is banned."""
+        viewer: User = self.context["request"].user
+        return mask_if_moderated(
+            instance.description,
+            moderated=instance.is_moderated or instance.user.is_banned,
+            owner=instance.user,
+            viewer=viewer,
         )
 
 
@@ -170,6 +182,7 @@ class GameReviewSerializer(serializers.ModelSerializer[GameReview]):
 
     user = UserSerializer()
     score = serializers.SerializerMethodField()
+    review = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the game review serializer."""
@@ -183,6 +196,16 @@ class GameReviewSerializer(serializers.ModelSerializer[GameReview]):
         if game_list_instance:
             return game_list_instance.score
         return None
+
+    def get_review(self: Self, instance: GameReview) -> str:
+        """Mask the review text for other viewers if it's moderated or its author is banned."""
+        viewer: User = self.context["request"].user
+        return mask_if_moderated(
+            instance.review,
+            moderated=instance.is_moderated or instance.user.is_banned,
+            owner=instance.user,
+            viewer=viewer,
+        )
 
 
 class GameReviewCreateSerializer(serializers.ModelSerializer[GameReview]):
@@ -485,6 +508,7 @@ class TranslationSuggestionSerializer(serializers.ModelSerializer[TranslationSug
     game = GameReferenceSerializer(read_only=True)
     submitted_by = UserSimpleSerializer(read_only=True)
     reviewed_by = UserSimpleSerializer(read_only=True)
+    proposed_value = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the translation suggestion serializer."""
@@ -503,7 +527,17 @@ class TranslationSuggestionSerializer(serializers.ModelSerializer[TranslationSug
             "reviewed_at",
             "rejection_reason",
         )
-        read_only_fields = fields
+        read_only_fields = tuple(f for f in fields if f != "proposed_value")
+
+    def get_proposed_value(self: Self, instance: TranslationSuggestion) -> str:
+        """Mask the proposed text for other viewers if it's moderated or its author is banned."""
+        viewer: User = self.context["request"].user
+        return mask_if_moderated(
+            instance.proposed_value,
+            moderated=instance.is_moderated or instance.submitted_by.is_banned,
+            owner=instance.submitted_by,
+            viewer=viewer,
+        )
 
 
 class TranslationSuggestionCreateSerializer(serializers.ModelSerializer[TranslationSuggestion]):

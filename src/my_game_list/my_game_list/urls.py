@@ -40,6 +40,7 @@ urlpatterns = [
     path("api/collection/", include("my_game_list.collections.urls")),
     path("api/friendship/", include("my_game_list.friendships.urls")),
     path("api/notification/", include("my_game_list.notifications.urls")),
+    path("api/moderation/", include("my_game_list.moderation.urls")),
 ]
 
 if "rosetta" in settings.INSTALLED_APPS:

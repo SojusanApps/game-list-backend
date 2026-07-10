@@ -20,6 +20,7 @@ class NotificationCategory(TextChoices):
     FRIENDSHIP = "friendship", _("Friendship")
     RELEASE = "game_release", _("Game Release")
     TRANSLATION_SUGGESTION = "translation", _("Translation Suggestion")
+    MODERATION = "moderation", _("Moderation")
 
 
 class NotificationVerb(TextChoices):
@@ -37,6 +38,8 @@ class NotificationVerb(TextChoices):
         "rejected your translation suggestion",
         _("rejected your translation suggestion"),
     )
+    WARNING_ISSUED = "issued you a warning", _("issued you a warning")
+    ACCOUNT_BANNED = "banned your account", _("banned your account")
 
 
 class NotificationDescription(TextChoices):

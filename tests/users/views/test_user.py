@@ -106,6 +106,7 @@ def test_get_user(authenticated_api_client: APIClient) -> None:
         "friends": [],
         "latest_game_list_updates": [],
         "is_staff": False,
+        "warning_count": 0,
         "game_list_statistics": {
             "completed": 0,
             "dropped": 0,
