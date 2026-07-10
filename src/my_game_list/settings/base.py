@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     f"{MAIN_APP}.collections",
     f"{MAIN_APP}.friendships",
     f"{MAIN_APP}.notifications",
+    f"{MAIN_APP}.moderation",
 ]
 
 MIDDLEWARE = [
@@ -250,6 +251,7 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "GameListStatusEnum": "my_game_list.games.models.GameListStatus",
         "TranslationSuggestionStatusEnum": "my_game_list.games.models.TranslationSuggestionStatus",
+        "ReportStatusEnum": "my_game_list.moderation.models.ReportStatus",
     },
 }
 

@@ -13,6 +13,7 @@ from my_game_list.collections.models import (
     Tier,
 )
 from my_game_list.games.models import Game
+from my_game_list.moderation.masking import mask_if_moderated
 from my_game_list.users.models import User
 from my_game_list.users.serializers import UserSerializer
 
@@ -33,6 +34,7 @@ class CollectionItemSerializer(serializers.ModelSerializer[CollectionItem]):
     game = CollectionItemGameSerializer(read_only=True)
     tier_display = serializers.CharField(source="get_tier_display", read_only=True)
     added_by = UserSerializer(read_only=True)
+    description = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the collection item serializer."""
@@ -49,6 +51,17 @@ class CollectionItemSerializer(serializers.ModelSerializer[CollectionItem]):
             "collection",
             "game",
             "added_by",
+        )
+
+    def get_description(self: Self, instance: CollectionItem) -> str:
+        """Mask the note text for other viewers if it's moderated or added_by is banned."""
+        viewer: User = self.context["request"].user
+        added_by_banned = instance.added_by is not None and instance.added_by.is_banned
+        return mask_if_moderated(
+            instance.description,
+            moderated=instance.is_moderated or added_by_banned,
+            owner=instance.added_by,
+            viewer=viewer,
         )
 
 
@@ -89,6 +102,8 @@ class CollectionSerializer(serializers.ModelSerializer[Collection]):
     collaborators = UserSerializer(many=True, read_only=True)
     items_count = serializers.SerializerMethodField()
     items_cover_image_ids = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the collection serializer."""
@@ -113,6 +128,24 @@ class CollectionSerializer(serializers.ModelSerializer[Collection]):
             "items_count",
             "items_cover_image_ids",
         )
+
+    def _mask(self: Self, instance: Collection, value: str) -> str:
+        """Mask a Collection field for other viewers if it's moderated or its owner is banned."""
+        viewer: User = self.context["request"].user
+        return mask_if_moderated(
+            value,
+            moderated=instance.is_moderated or instance.user.is_banned,
+            owner=instance.user,
+            viewer=viewer,
+        )
+
+    def get_name(self: Self, instance: Collection) -> str:
+        """Mask the collection's name for other viewers if it's moderated or its owner is banned."""
+        return self._mask(instance, instance.name)
+
+    def get_description(self: Self, instance: Collection) -> str:
+        """Mask the collection's description for other viewers if it's moderated or its owner is banned."""
+        return self._mask(instance, instance.description)
 
     def get_items_count(self: Self, instance: Collection) -> int:
         """Get the number of items in the collection."""
