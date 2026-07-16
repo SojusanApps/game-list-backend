@@ -2,6 +2,14 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.26.0] - 16.07.2026
+
+* Added self-service username and password change endpoints to `UserViewSet` (`/user/users/`), both self-service only (operate on `request.user`, no way to target another account) and fully documented via `@extend_schema` (correct request/response bodies instead of the ViewSet's default `User` schema).
+  * `POST /change-username/` — validates the new username against the same format/uniqueness rules as registration and rejects a no-op (same-as-current) submission. Regenerates `User.slug`, and every slug of the user's owned `Collection`s, from the new username, resolving any collision with a numeric suffix. Returns the updated user (`UserDetailSerializer`).
+  * `POST /change-password/` — requires the current password for re-verification, validates the new password with the same `django_validate_password` rules used at registration, and requires a matching confirmation. Returns `204 No Content`. Does not invalidate already-issued tokens on other devices.
+* Extracted a shared `generate_unique_slug` helper (`my_game_list/slugs.py`) from `Collection.save()`'s existing collision-suffixing logic, and wired it into `User.save()` too — fixing a pre-existing latent bug where `User.save()` never handled slug collisions at all (distinct valid usernames can collide once `.`/`@`/`+` are stripped and case is folded by `slugify()`).
+* Fixed `UserViewSet.get_authenticators()`, which was silently skipping authentication for *any* `POST` request to the viewset, not just the intended `create`/registration action — harmless while `create` was the only `POST` action, but would have left the new `change-username`/`change-password` actions open with no authentication.
+
 ## v. [4.25.0] - 10.07.2026
 
 * Added a user reporting and content moderation system.

@@ -84,6 +84,51 @@ class UserCreateSerializer(serializers.ModelSerializer[UserModel]):
         return user
 
 
+class ChangeUsernameSerializer(serializers.ModelSerializer[UserModel]):
+    """Serializer used to change a user's own username."""
+
+    class Meta:
+        """Meta data for the class."""
+
+        model = User
+        fields = ("username",)
+
+    def validate_username(self: Self, value: str) -> str:
+        """Reject submitting the current username as the 'new' one."""
+        if self.instance is not None and value == self.instance.username:
+            message = "The new username must be different from the current one."
+            raise serializers.ValidationError(message)
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer[UserModel]):
+    """Serializer used to change a user's own password."""
+
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    new_password_confirm = serializers.CharField(write_only=True)
+
+    def validate_current_password(self: Self, value: str) -> str:
+        """Check the current password against the requesting user."""
+        user: UserModel = self.context["request"].user
+        if not user.check_password(value):
+            message = "Current password is incorrect."
+            raise serializers.ValidationError(message)
+        return value
+
+    def validate_new_password(self: Self, value: str) -> str:
+        """Validate the new password against Django's password validators."""
+        django_validate_password(value)
+        return value
+
+    def validate(self: Self, attrs: dict[str, str]) -> dict[str, str]:
+        """Check that new_password and new_password_confirm match."""
+        if attrs["new_password"] != attrs["new_password_confirm"]:
+            message = "The new password and its confirmation do not match."
+            raise serializers.ValidationError(message)
+        return attrs
+
+
 class UserSimpleSerializer(serializers.ModelSerializer[UserModel]):
     """Simple user serializer."""
 

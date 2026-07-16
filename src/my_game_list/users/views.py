@@ -3,17 +3,24 @@
 from typing import TYPE_CHECKING, Self
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 if TYPE_CHECKING:
     from rest_framework.authentication import BaseAuthentication
+    from rest_framework.request import Request
 
 from my_game_list.users.filters import UserFilterSet
 from my_game_list.users.models import User as UserModel
 from my_game_list.users.serializers import (
+    ChangePasswordSerializer,
+    ChangeUsernameSerializer,
     UserCreateSerializer,
     UserDetailSerializer,
     UserSerializer,
@@ -80,12 +87,20 @@ class UserViewSet(GenericViewSet[UserModel], ListModelMixin, RetrieveModelMixin,
         return UserSerializer
 
     def get_authenticators(self: Self) -> list[BaseAuthentication]:
-        """Get the authenticators for the actions."""
-        action = getattr(self, "action", None)
-        if action == "create":
-            return []
+        """Get the authenticators for the actions.
 
-        if action is None and self.request.method == "POST":
+        During real request dispatch, `self.action` isn't set yet at this point (it's
+        assigned later in `initialize_request`), but `self.request` already is (set by the
+        router's `as_view()` closure before `dispatch()` runs) - so `self.action_map` is used
+        to resolve the current action from the request method. Schema generation is the
+        opposite: `self.action` is already set, but `self.request` is explicitly `None`, so
+        `self.action` is used directly whenever it's available to avoid touching `self.request`.
+        """
+        action = getattr(self, "action", None)
+        if action is None and self.request is not None:
+            action = self.action_map.get((self.request.method or "").lower())
+
+        if action == "create":
             return []
 
         return super().get_authenticators()
@@ -94,3 +109,59 @@ class UserViewSet(GenericViewSet[UserModel], ListModelMixin, RetrieveModelMixin,
         """Get the permissions for the actions."""
         permission_classes = (AllowAny,) if self.action == "create" else (IsAuthenticated,)
         return [permission() for permission in permission_classes]
+
+    @extend_schema(
+        description=(
+            "Change the authenticated user's own username. "
+            "The new username must be unique, differ from the current one, and follow the same "
+            "format rules as registration. Regenerates the user's slug (and every slug of their "
+            "owned collections) from the new username, resolving any collision with a numeric suffix."
+        ),
+        request=ChangeUsernameSerializer,
+        responses={200: UserDetailSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="change-username")
+    def change_username(self: Self, request: Request) -> Response:
+        """Change the requesting user's own username, regenerating their slug."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        user = request.user
+        serializer = ChangeUsernameSerializer(instance=user, data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            user.username = serializer.validated_data["username"]
+            user.slug = ""
+            user.save()
+
+            for collection in user.collections.all():
+                collection.slug = ""
+                collection.save()
+
+        return Response(UserDetailSerializer(user, context=self.get_serializer_context()).data)
+
+    @extend_schema(
+        description=(
+            "Change the authenticated user's own password. "
+            "Requires the current password for re-verification. "
+            "The new password is validated with the same strength rules used at registration. "
+            "Does not invalidate already-issued tokens on other devices."
+        ),
+        request=ChangePasswordSerializer,
+        responses={204: None},
+    )
+    @action(detail=False, methods=["post"], url_path="change-password")
+    def change_password(self: Self, request: Request) -> Response:
+        """Change the requesting user's own password."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data, context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

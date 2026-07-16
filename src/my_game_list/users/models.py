@@ -7,10 +7,10 @@ from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.html import format_html
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from my_game_list.my_game_list.models import BaseModel
+from my_game_list.my_game_list.slugs import generate_unique_slug
 
 
 class Gender(models.TextChoices):
@@ -75,7 +75,7 @@ class User(BaseModel, AbstractUser):
     def save(self: Self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
         """Save the model and generate a slug based on the username."""
         if not self.slug and self.username:
-            self.slug = slugify(self.username)
+            self.slug = generate_unique_slug(type(self), self.username, exclude_pk=self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self: Self) -> str:
