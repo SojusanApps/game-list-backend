@@ -16,6 +16,8 @@ _Avoid_: lookup table, reference data, master data
 - A **Report** targets exactly one of: a User's avatar, a User's username, a `GameReview`, a `TranslationSuggestion`, a `GameList`'s note, or a `Collection` (name and/or description) or `CollectionItem`'s note.
 - A **User** can file many **Reports** (as `reported_by`) and have many filed against them (as `reported_user`), but never against their own content.
 - Accepting a **Report** always issues exactly one **Warning**; a **User** with 3 **Warnings** is automatically **Banned**.
+- A **User**'s `slug` is derived from `username` and is regenerated (with collision-suffixing) whenever the username changes — unlike `Game.slug`/`Company.slug`, which are frozen at creation and never revisited. See [ADR-0003](docs/adr/0003-regenerate-user-and-collection-slugs-on-username-change.md).
+- A **Collection**'s `slug` is derived from its owning **User**'s `username` and the Collection's `name`; it is regenerated whenever the owning User's username changes, keeping it in sync.
 
 ## Glossary
 

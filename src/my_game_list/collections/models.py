@@ -4,10 +4,10 @@ from typing import Any, ClassVar, Self
 
 from django.conf import settings
 from django.db import models
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from my_game_list.my_game_list.models import BaseModel
+from my_game_list.my_game_list.slugs import generate_unique_slug
 
 
 class CollectionVisibility(models.TextChoices):
@@ -128,13 +128,11 @@ class Collection(BaseModel):
     def save(self: Self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
         """Save the collection and generate a slug based on the name."""
         if not self.slug and self.name:
-            base_slug = slugify(f"{self.user.username}-{self.name}")
-            slug = base_slug
-            counter = 1
-            while Collection.objects.filter(slug=slug).exists():
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            self.slug = slug
+            self.slug = generate_unique_slug(
+                Collection,
+                f"{self.user.username}-{self.name}",
+                exclude_pk=self.pk,
+            )
         super().save(*args, **kwargs)
 
 

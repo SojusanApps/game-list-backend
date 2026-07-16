@@ -15,3 +15,14 @@ User: type[UserModel] = get_user_model()
 def test_user_dunder_str(user_fixture: UserModel) -> None:
     """Test the `User` dunder str method."""
     assert str(user_fixture) == user_fixture.username
+
+
+@pytest.mark.django_db()
+def test_user_slug_collision_gets_suffixed(user_fixture: UserModel) -> None:
+    """Two distinct usernames that slugify identically (differing only by case) don't collide."""
+    assert user_fixture.username == "test_user"
+    assert user_fixture.slug == "test_user"
+
+    other_user = User.objects.create(username="Test_User", email="test-user-2@email.com")
+
+    assert other_user.slug == "test_user-1"

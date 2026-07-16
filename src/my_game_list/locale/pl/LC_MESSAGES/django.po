@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-09 17:36+0000\n"
+"POT-Creation-Date: 2026-07-16 06:42+0000\n"
 "PO-Revision-Date: 2022-08-11 18:47+0000\n"
 "Last-Translator:   <>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,7 +92,7 @@ msgid "name"
 msgstr "nazwa"
 
 #: src/my_game_list/collections/models.py:57
-#: src/my_game_list/collections/models.py:165
+#: src/my_game_list/collections/models.py:163
 #: src/my_game_list/games/models.py:173
 #: src/my_game_list/notifications/models.py:51
 msgid "description"
@@ -103,7 +103,7 @@ msgid "is favorite"
 msgstr "jest ulubioną"
 
 #: src/my_game_list/collections/models.py:68
-#: src/my_game_list/collections/models.py:171
+#: src/my_game_list/collections/models.py:169
 #: src/my_game_list/games/models.py:179 src/my_game_list/games/models.py:247
 #: src/my_game_list/games/models.py:537
 msgid "is moderated"
@@ -123,7 +123,7 @@ msgid "type"
 msgstr "typ"
 
 #: src/my_game_list/collections/models.py:93
-#: src/my_game_list/collections/models.py:175
+#: src/my_game_list/collections/models.py:173
 #: src/my_game_list/friendships/models.py:22
 #: src/my_game_list/friendships/models.py:84
 #: src/my_game_list/games/models.py:107 src/my_game_list/games/models.py:201
@@ -132,7 +132,7 @@ msgid "creation time"
 msgstr "czas stworzenia"
 
 #: src/my_game_list/collections/models.py:94
-#: src/my_game_list/collections/models.py:176
+#: src/my_game_list/collections/models.py:174
 #: src/my_game_list/friendships/models.py:85
 #: src/my_game_list/games/models.py:202 src/my_game_list/games/models.py:593
 msgid "last modified"
@@ -153,7 +153,7 @@ msgid "collaborators"
 msgstr "współtwórcy"
 
 #: src/my_game_list/collections/models.py:121
-#: src/my_game_list/collections/models.py:182
+#: src/my_game_list/collections/models.py:180
 msgid "collection"
 msgstr "kolekcja"
 
@@ -161,28 +161,28 @@ msgstr "kolekcja"
 msgid "collections"
 msgstr "kolekcje"
 
-#: src/my_game_list/collections/models.py:149
+#: src/my_game_list/collections/models.py:147
 msgid "order"
 msgstr "kolejność"
 
-#: src/my_game_list/collections/models.py:157
+#: src/my_game_list/collections/models.py:155
 msgid "tier"
 msgstr "tier"
 
-#: src/my_game_list/collections/models.py:189
+#: src/my_game_list/collections/models.py:187
 #: src/my_game_list/games/models.py:772
 msgid "game"
 msgstr "gra"
 
-#: src/my_game_list/collections/models.py:197
+#: src/my_game_list/collections/models.py:195
 msgid "added by"
 msgstr "dodane przez"
 
-#: src/my_game_list/collections/models.py:204
+#: src/my_game_list/collections/models.py:202
 msgid "collection item"
 msgstr "element kolekcji"
 
-#: src/my_game_list/collections/models.py:205
+#: src/my_game_list/collections/models.py:203
 msgid "collection items"
 msgstr "elementy kolekcji"
 
@@ -530,11 +530,11 @@ msgstr "tytuł wyszukiwania"
 msgid "games"
 msgstr "gry"
 
-#: src/my_game_list/moderation/masking.py:10
+#: src/my_game_list/moderation/masking.py:15
 msgid "This content has been removed for violating our community guidelines."
 msgstr "Ta zawartość została usunięta za naruszenie zasad naszej społeczności."
 
-#: src/my_game_list/moderation/masking.py:11
+#: src/my_game_list/moderation/masking.py:16
 msgid "ModeratedUser"
 msgstr "ZmoderowanyUżytkownik"
 
