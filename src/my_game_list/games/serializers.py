@@ -177,6 +177,29 @@ class GameListCreateSerializer(serializers.ModelSerializer[GameList]):
         )
 
 
+class GameListCompareRowSerializer(serializers.Serializer[Any]):
+    """A serializer for a single row of a GameList comparison between two users."""
+
+    game_id = serializers.IntegerField(help_text="The ID of the compared game.")
+    game_slug = serializers.CharField(help_text="The slug of the compared game.")
+    title = serializers.CharField(help_text="The title of the compared game.")
+    game_cover_image = serializers.CharField(allow_null=True, help_text="The cover image ID of the compared game.")
+    first_user_score = serializers.IntegerField(allow_null=True, help_text="The first user's score, if any.")
+    first_user_status = serializers.CharField(allow_null=True, help_text="The first user's status, human-readable.")
+    first_user_status_code = serializers.CharField(allow_null=True, help_text="The first user's raw status code.")
+    second_user_score = serializers.IntegerField(allow_null=True, help_text="The second user's score, if any.")
+    second_user_status = serializers.CharField(allow_null=True, help_text="The second user's status, human-readable.")
+    second_user_status_code = serializers.CharField(allow_null=True, help_text="The second user's raw status code.")
+
+
+class GameListCompareResponseSerializer(serializers.Serializer[Any]):
+    """A serializer for the GameList compare endpoint response."""
+
+    common = GameListCompareRowSerializer(many=True, help_text="Games both users have.")
+    first_user_unique = GameListCompareRowSerializer(many=True, help_text="Games only the first user has.")
+    second_user_unique = GameListCompareRowSerializer(many=True, help_text="Games only the second user has.")
+
+
 class GameReviewSerializer(serializers.ModelSerializer[GameReview]):
     """A serializer for the game review model."""
 

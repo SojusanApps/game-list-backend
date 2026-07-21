@@ -1,12 +1,13 @@
 """This module contains the viewsets for the game related data."""
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, cast
 
 import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status
 from rest_framework.decorators import action
@@ -59,6 +60,7 @@ from my_game_list.games.serializers import (
     ExternalGameSourceSerializer,
     GameEngineSerializer,
     GameFollowSerializer,
+    GameListCompareResponseSerializer,
     GameListCreateSerializer,
     GameListSerializer,
     GameMediaSerializer,
@@ -82,6 +84,7 @@ from my_game_list.games.serializers import (
 from my_game_list.my_game_list.permissions import IsAdminOrReadOnly
 from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
 from my_game_list.notifications.utils import notify_send
+from my_game_list.users.models import User
 
 if TYPE_CHECKING:
     import datetime
@@ -551,6 +554,103 @@ class GameListViewSet(ModelViewSet[GameList]):
 
         result = GameListSerializer(instances, many=True, context=self.get_serializer_context())
         return Response(result.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        description=(
+            "Compare two users' game lists. Games are matched by Game, independent of each user's "
+            "status — a Completed entry for one user and a Plan to Play entry for the other still "
+            "count as a common game. Returns three groups: games both users have (with each user's "
+            "score/status shown independently), games only the first user has, and games only the "
+            "second user has. Each group is ordered alphabetically by title. "
+            "Returns 400 if the two user IDs are the same, or 404 if either user does not exist."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="first_user_id",
+                description="ID of the first user to compare.",
+                required=True,
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.STR,
+            ),
+            OpenApiParameter(
+                name="second_user_id",
+                description="ID of the second user to compare.",
+                required=True,
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.STR,
+            ),
+        ],
+        responses={200: GameListCompareResponseSerializer},
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path=r"(?P<first_user_id>[^/.]+)/compare/(?P<second_user_id>[^/.]+)",
+    )
+    def compare(
+        self: Self,
+        request: Request,
+        first_user_id: str,
+        second_user_id: str,
+    ) -> Response:
+        """Compare two users' game lists, partitioned into common and unique games."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        if first_user_id == second_user_id:
+            return Response(
+                {"non_field_errors": ["Cannot compare a user with themselves."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        first_user = User.objects.filter(pk=first_user_id).first()
+        second_user = User.objects.filter(pk=second_user_id).first()
+        if first_user is None or second_user is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        first_entries = {gl.game_id: gl for gl in GameList.objects.filter(user=first_user).select_related("game")}
+        second_entries = {gl.game_id: gl for gl in GameList.objects.filter(user=second_user).select_related("game")}
+
+        common_ids = first_entries.keys() & second_entries.keys()
+        first_only_ids = first_entries.keys() - second_entries.keys()
+        second_only_ids = second_entries.keys() - first_entries.keys()
+
+        data = {
+            "common": self._build_compare_rows(common_ids, first_entries, second_entries),
+            "first_user_unique": self._build_compare_rows(first_only_ids, first_entries, second_entries),
+            "second_user_unique": self._build_compare_rows(second_only_ids, first_entries, second_entries),
+        }
+        serializer = GameListCompareResponseSerializer(data)
+        return Response(serializer.data)
+
+    @staticmethod
+    def _build_compare_rows(
+        game_ids: set[int],
+        first_entries: dict[int, GameList],
+        second_entries: dict[int, GameList],
+    ) -> list[dict[str, Any]]:
+        """Build comparison rows for the given game IDs, sorted alphabetically by title."""
+        rows = []
+        for game_id in game_ids:
+            first_entry = first_entries.get(game_id)
+            second_entry = second_entries.get(game_id)
+            entry = cast("GameList", first_entry or second_entry)
+            game = entry.game
+            rows.append(
+                {
+                    "game_id": game.id,
+                    "game_slug": game.slug,
+                    "title": game.title,
+                    "game_cover_image": game.cover_image_id,
+                    "first_user_score": first_entry.score if first_entry else None,
+                    "first_user_status": first_entry.get_status_display() if first_entry else None,
+                    "first_user_status_code": first_entry.status if first_entry else None,
+                    "second_user_score": second_entry.score if second_entry else None,
+                    "second_user_status": second_entry.get_status_display() if second_entry else None,
+                    "second_user_status_code": second_entry.status if second_entry else None,
+                },
+            )
+        return sorted(rows, key=lambda row: row["title"])
 
 
 @extend_schema_view(

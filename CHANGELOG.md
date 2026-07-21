@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [4.27.0] - 21.07.2026
+
+* Added a `GameList` compare endpoint: `GET /game-lists/{first_user_id}/compare/{second_user_id}/` on `GameListViewSet` (`IsAuthenticated`, unpaginated). Partitions the two users' game lists into `common` (games both have, matched by `Game` regardless of each user's individual `status`), `first_user_unique`, and `second_user_unique`, each ordered alphabetically by title. Each row carries `game_id`/`game_slug`/`title`/`game_cover_image` plus `first_user_score`/`first_user_status`/`first_user_status_code` and the equivalent `second_user_*` fields (`null` when that user doesn't have the game). Comparing a user against themselves returns `400`; a nonexistent user ID returns `404`.
+
 ## v. [4.26.0] - 16.07.2026
 
 * Added self-service username and password change endpoints to `UserViewSet` (`/user/users/`), both self-service only (operate on `request.user`, no way to target another account) and fully documented via `@extend_schema` (correct request/response bodies instead of the ViewSet's default `User` schema).

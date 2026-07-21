@@ -33,6 +33,10 @@ _Avoid_: sync, sync from Steam, pull from Steam
 The two-step process by which a user imports games into their GameList from a pasted list of game titles. Step 1: submit the titles and receive, per input title and in input order, up to three candidate games ranked best-first (empty when nothing matches well enough), each flagged when already on the user's GameList. Step 2: the user picks the correct candidate per title (or marks it as not found) and submits a bulk-create request. Stores nothing itself; does not create or modify game records.
 _Avoid_: list import, text import, paste import, manual import
 
+**Compare**:
+A side-by-side comparison of two users' `GameList` entries, partitioned into three groups: games both users have (`common`), games only the first user has (`first_user_unique`), and games only the second user has (`second_user_unique`). Matching is by `Game` alone, independent of `status` — a `Completed` entry for one user and a `Plan to Play` entry for the other still count as `common`. Each row exposes the game's identity plus each user's `score` and `status` independently, `null` for whichever user doesn't have the game.
+_Avoid_: diff, overlap, sync
+
 **Translation Suggestion**:
 A user-submitted proposal for a new Polish value of a single translatable field (`title_pl` or `summary_pl`) on one `Game`. Always carries the full proposed text for that field, never a partial diff or patch — a typo fix and a full re-translation are the same kind of record, just with more or less textual overlap with the current value. Scoped to `Game.title`/`Game.summary` only, not `GameList.description` (which is per-user personal notes, not a translation target). One suggestion targets exactly one field; fixing the title and proposing a new summary are two separate suggestions.
 

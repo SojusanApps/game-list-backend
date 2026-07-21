@@ -1,0 +1,26 @@
+meta {
+  name: Compare
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{protocol}}/{{host}}:{{port}}/api/game/game-lists/:first_user_id/compare/:second_user_id
+  body: none
+  auth: basic
+}
+
+params:path {
+  second_user_id: 8
+  first_user_id: 2
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
