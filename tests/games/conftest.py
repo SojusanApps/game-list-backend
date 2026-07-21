@@ -34,6 +34,13 @@ User: type[UserModel] = get_user_model()
 
 @pytest.fixture
 @freeze_time("2023-06-22 16:47:12")
+def other_user_fixture() -> UserModel:
+    """A fixture with a second user, distinct from user_fixture."""
+    return baker.make(User, username="other_user", email="other_user@email.com", password="test")  # noqa: S106
+
+
+@pytest.fixture
+@freeze_time("2023-06-22 16:47:12")
 def game_type_fixture() -> GameType:
     """A fixture with a test game type."""
     return baker.make("games.GameType")
