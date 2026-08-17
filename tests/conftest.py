@@ -1,8 +1,12 @@
 """Includes global scope fixtures. They can be used in all tests."""
 
-from typing import TYPE_CHECKING
+import time
+import uuid
+from typing import TYPE_CHECKING, Any
 
+import jwt
 import pytest
+from cryptography.hazmat.primitives.asymmetric import rsa
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
@@ -12,9 +16,10 @@ from rest_framework.test import APIClient
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     import pytest_django
+    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
     from my_game_list.users.models import User as UserModel
 
@@ -99,3 +104,42 @@ def admin_authenticated_api_client(admin_user_fixture: UserModel, api_client: AP
     api_client.force_authenticate(admin_user_fixture)
 
     return api_client
+
+
+@pytest.fixture(scope="session")
+def _keycloak_rsa_private_key() -> RSAPrivateKey:
+    """A throwaway RSA keypair used to sign test tokens, standing in for Keycloak's own key."""
+    return rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+
+@pytest.fixture
+def _mock_keycloak_jwks(_keycloak_rsa_private_key: RSAPrivateKey, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make PyJWKClient return our test key instead of fetching from a real Keycloak server."""
+    public_jwk = jwt.algorithms.RSAAlgorithm.to_jwk(_keycloak_rsa_private_key.public_key(), as_dict=True)
+    signing_key = jwt.PyJWK(public_jwk, algorithm="RS256")
+    monkeypatch.setattr(jwt.PyJWKClient, "get_signing_key_from_jwt", lambda self, token: signing_key)  # noqa: ARG005
+
+
+@pytest.fixture
+def make_keycloak_token(_keycloak_rsa_private_key: RSAPrivateKey) -> Callable[..., str]:
+    """Factory for a signed Keycloak-shaped test token, with sane defaults overridable per test."""
+
+    def _make(omit: list[str] | None = None, **claim_overrides: Any) -> str:  # noqa: ANN401
+        now = int(time.time())
+        claims = {
+            "sub": str(uuid.uuid4()),
+            "nickname": "kc_user",
+            "email": "kc_user@example.com",
+            "email_verified": True,
+            "iss": f"{settings.KEYCLOAK_SERVER_URL}/realms/{settings.KEYCLOAK_REALM}",
+            "aud": settings.KEYCLOAK_AUDIENCE,
+            "azp": settings.KEYCLOAK_AUDIENCE,
+            "iat": now,
+            "exp": now + 300,
+        }
+        claims.update(claim_overrides)
+        for claim_name in omit or []:
+            claims.pop(claim_name, None)
+        return jwt.encode(claims, _keycloak_rsa_private_key, algorithm="RS256", headers={"kid": "test-kid"})
+
+    return _make

@@ -63,6 +63,13 @@ class User(BaseModel, AbstractUser):
         default=False,
         help_text="Whether an accepted username Report masks the username for other viewers.",
     )
+    keycloak_id = models.UUIDField(
+        _("keycloak id"),
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="The 'sub' claim of this user's Keycloak identity. Null for accounts created outside Keycloak.",
+    )
 
     # Delete the unwanted fields from the `AbstractUser`
     # first and last name of the user are sensitive data that will not be used in the application

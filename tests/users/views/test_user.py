@@ -71,7 +71,7 @@ def test_list_users(authenticated_api_client: APIClient, admin_user_fixture: Use
                 "id": users_ids[1],
                 "slug": ANY,
                 "username": "test_admin",
-                "email": "test_admin@email.com",
+                "email": None,
                 "gender": "",
                 "last_active": None,
                 "last_login": None,
@@ -120,14 +120,22 @@ def test_get_user(authenticated_api_client: APIClient) -> None:
 
 
 @pytest.mark.django_db()
-def test_register_user(api_client: APIClient) -> None:
-    """Check if registration process is successful."""
+def test_self_registration_is_removed(authenticated_api_client: APIClient) -> None:
+    """Self-registration is gone now that Keycloak is the sole account-provisioning path (ADR-0010)."""
     data = {
         "username": "testuser",
         "password": "testpassword",
         "email": "test@test.com",
     }
-    response = api_client.post(reverse("users:users-list"), data)
+    response = authenticated_api_client.post(reverse("users:users-list"), data)
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["username"] == "testuser"
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    assert not User.objects.filter(username="testuser").exists()
+
+
+@pytest.mark.django_db()
+def test_self_registration_is_removed_for_unauthenticated_caller(api_client: APIClient) -> None:
+    """An unauthenticated POST is rejected at the permission layer before method resolution."""
+    response = api_client.post(reverse("users:users-list"), {})
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

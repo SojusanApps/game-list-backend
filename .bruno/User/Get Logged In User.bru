@@ -5,12 +5,11 @@ meta {
 }
 
 get {
-  url: {{protocol}}/{{host}}:{{port}}/api/user/users/logged_in_user
+  url: {{protocol}}/{{host}}:{{port}}/api/user/users/me/
   body: none
-  auth: basic
+  auth: bearer
 }
 
-auth:basic {
-  username: {{username}}
-  password: {{password}}
+auth:bearer {
+  token: {{keycloak_access_token}}
 }

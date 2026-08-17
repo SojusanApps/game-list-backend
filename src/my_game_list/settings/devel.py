@@ -15,7 +15,7 @@ CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
 
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
     "rest_framework.authentication.BasicAuthentication",
-    "rest_framework_simplejwt.authentication.JWTAuthentication",
+    "my_game_list.my_game_list.authentication.KeycloakAuthentication",
 )
 
 STATIC_URL = "/static/"

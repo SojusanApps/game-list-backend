@@ -1,3 +1,3 @@
 """Main __init__, contains the application version number."""
 
-__version__ = (4, 27, 0)
+__version__ = (5, 0, 0)

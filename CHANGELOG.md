@@ -2,6 +2,21 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.0.0] - 17.08.2026
+
+* Migrated authentication from self-issued `SimpleJWT` tokens to Keycloak-issued access tokens — a hard cutover, not a dual-accept transition period.
+  * New `KeycloakAuthentication` class (`my_game_list/authentication.py`), the sole entry in `DEFAULT_AUTHENTICATION_CLASSES`, validates tokens offline against the realm's JWKS endpoint (`PyJWT`'s `PyJWKClient`, keys cached). Checks `iss` strictly against the configured realm and accepts the expected client id in either the `aud` or `azp` claim, since Keycloak doesn't reliably populate `aud` with the client id unless an audience mapper is configured.
+  * `User` gets a new `keycloak_id` field (nullable, unique), storing the token's `sub` claim.
+  * On every authenticated request, the caller is resolved to a local `User` by `keycloak_id`: a never-seen `sub` provisions a new account (`username` from the token's `nickname` claim, `email` from `email`, unusable password); a known `sub` has its `username` reconciled from the current `nickname` claim on every call, resolving a collision with another user's username via a numeric suffix. Reconciliation also regenerates `User.slug` and every owned `Collection.slug`, matching what the old change-username endpoint used to do.
+  * `is_staff` is never set or altered by anything Keycloak-related; a resolved `User` with `is_active=False` is rejected even with an otherwise valid token, same as before.
+  * A never-seen `sub` whose token asserts a verified email matching an existing, not-yet-linked `User` (e.g. an admin account bootstrapped via `createsuperuser`) is linked to that account instead of failing — fixes a 500 on the duplicate-email `IntegrityError` this used to raise. An unverified email colliding with an existing account fails cleanly with `401` instead.
+  * New settings: `KEYCLOAK_SERVER_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_AUDIENCE`.
+  * Added a `drf-spectacular` authentication extension (`KeycloakAuthenticationScheme`) so the generated OpenAPI schema correctly documents the new Bearer scheme instead of silently losing auth info for every endpoint.
+* Added `GET /user/users/me/` — returns the authenticated caller's own account, in the same shape as the owner-view of `GET /user/users/{id}/`.
+* Removed the pre-Keycloak self-service authentication surface, now that the frontend has no login/register UI of its own and Keycloak is the sole token issuer: self-registration (`POST /user/users/`), `POST /token/`, `POST /token/refresh/`, `POST /user/users/change-password/`, and `POST /user/users/change-username/`. Dropped the now-unused `djangorestframework-simplejwt` dependency.
+* Fixed a pre-existing bug: `email` was visible to any authenticated viewer on `GET /user/users/` and `GET /user/users/{id}/`, not just the account owner, contradicting those endpoints' own documented behavior. Now restricted to the account owner and staff, matching the existing `warning_count` visibility rule.
+* Fixed `REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"]` being a bare string instead of a tuple, which crashes DRF's default `get_permissions()` — never hit before since every `ViewSet` already set its own `permission_classes` explicitly, until `UserViewSet` started relying on the default after its registration-only `get_permissions()` override was removed.
+
 ## v. [4.27.0] - 21.07.2026
 
 * Added a `GameList` compare endpoint: `GET /game-lists/{first_user_id}/compare/{second_user_id}/` on `GameListViewSet` (`IsAuthenticated`, unpaginated). Partitions the two users' game lists into `common` (games both have, matched by `Game` regardless of each user's individual `status`), `first_user_unique`, and `second_user_unique`, each ordered alphabetically by title. Each row carries `game_id`/`game_slug`/`title`/`game_cover_image` plus `first_user_score`/`first_user_status`/`first_user_status_code` and the equivalent `second_user_*` fields (`null` when that user doesn't have the game). Comparing a user against themselves returns `400`; a nonexistent user ID returns `404`.

@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     # Third party apps
     "rest_framework",
-    "rest_framework_simplejwt",
     "drf_spectacular",
     "django_extensions",
     "django_filters",
@@ -168,18 +167,17 @@ AUTH_USER_MODEL = "users.User"
 CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("my_game_list.my_game_list.authentication.KeycloakAuthentication",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
-    "DEFAULT_PERMISSION_CLASSES": "rest_framework.permissions.IsAuthenticated",
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-}
+KEYCLOAK_SERVER_URL = oeg("KEYCLOAK_SERVER_URL", "https://keycloak_server_url_to_change_on_production")
+KEYCLOAK_REALM = oeg("KEYCLOAK_REALM", "my-game-list")
+KEYCLOAK_AUDIENCE = oeg("KEYCLOAK_AUDIENCE", "my-game-list-frontend")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "MyGameList API",

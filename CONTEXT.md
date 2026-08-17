@@ -63,6 +63,13 @@ _Avoid_: suspended, deactivated, blocked (this is unrelated to `is_active`, whic
 A per-object flag (on `GameReview`, `GameList`, `Collection`, `CollectionItem`, `TranslationSuggestion`) or per-field flag on `User` (`has_moderated_avatar`, `has_moderated_username`), set permanently when that specific object's **Report** is accepted. Never auto-clears, even if the owner edits the content afterward. Masking is enforced only at the serializer: the live field is never overwritten or deleted, so "moderated" and "banned" are read-time visibility rules, not data mutations. The moderated owner and any admin always see the real value; everyone else sees the shared placeholder text. `has_moderated_avatar` is the one exception — once set, the avatar is hidden from literally everyone, including its owner, because avatar reports exist specifically for illegal-content cases.
 _Avoid_: deleted, removed, hidden (as a synonym for the flag itself — "hidden" describes the visibility effect, not the mechanism)
 
+**Identity**:
+The authenticated principal as Keycloak knows it — the token's `sub` claim plus whatever other claims it carries (`nickname`, `email`, `email_verified`). Not the same thing as a `User`.
+_Avoid_: token, claims (as a synonym for the concept itself — those are how an Identity is carried, not the Identity)
+
+**User** (sharpened against Identity):
+The backend's own account record. Resolved _from_ an Identity via the Keycloak authentication class — never assumed to already exist for a given Identity, always looked up or provisioned by `sub`. See [ADR-0006](docs/adr/0006-provisioning-in-authentication-class.md).
+
 ## Flagged ambiguities
 
 - "dictionary model" applies to `GameType` and `GameStatus` even though their primary fields are named `type` and `status` rather than `name`.

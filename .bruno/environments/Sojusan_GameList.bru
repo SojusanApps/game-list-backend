@@ -3,6 +3,8 @@ vars {
   host: localhost
   port: 8000
   igdb_api_base_url: https://api.igdb.com/v4
+  keycloak_server_url: http://127.0.0.1:8080
+  keycloak_realm: sojusan-apps-dev
 }
 vars:secret [
   igdb_access_token,
@@ -13,5 +15,11 @@ vars:secret [
   igdb_client_id,
   igdb_client_secret,
   steam_api_key,
-  steam_profile_id
+  steam_profile_id,
+  keycloak_client_id,
+  keycloak_client_secret,
+  keycloak_username,
+  keycloak_password,
+  keycloak_access_token,
+  keycloak_refresh_token
 ]
