@@ -2,7 +2,7 @@
 
 [![MyGameList CI](https://github.com/SojusanApps/my-game-list-backend/actions/workflows/my-game-list.yml/badge.svg)](https://github.com/SojusanApps/my-game-list-backend/actions/workflows/my-game-list.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MyGameListPlaceholder_my-game-list-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MyGameListPlaceholder_my-game-list-backend)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![prek](https://img.shields.io/badge/prek-enabled-brightgreen)](https://github.com/j178/prek)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Black](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
@@ -85,10 +85,10 @@ Tag Legend:
    uv sync --all-extras
    ```
 
-1. Install the `pre-commit` hooks:
+1. Install the `prek` hooks:
 
    ```shell
-   uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+   uv run prek install --hook-type pre-commit --hook-type pre-push
    ```
 
    To disable checking of certain hooks, you can use the `SKIP` variable, e.g.:
