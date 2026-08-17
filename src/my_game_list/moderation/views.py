@@ -97,7 +97,7 @@ class ReportViewSet(GenericViewSet[Report], ListModelMixin, RetrieveModelMixin, 
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         report = self.get_object()
-        rejection_reason = request.data.get("rejection_reason", "")
+        rejection_reason = request.data.get("rejection_reason", "") if isinstance(request.data, dict) else ""
         report.reject(request.user, rejection_reason=rejection_reason)
         serializer = self.get_serializer(report)
         return Response(serializer.data)

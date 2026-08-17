@@ -1,11 +1,8 @@
 """This module contains the serializers for user related data."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import (
-    validate_password as django_validate_password,
-)
 from django.db.models import Avg
 from drf_spectacular.helpers import lazy_serializer
 from drf_spectacular.utils import extend_schema_field, inline_serializer
@@ -16,8 +13,6 @@ from my_game_list.moderation.masking import MODERATION_PLACEHOLDER_USERNAME, mas
 from my_game_list.users.models import User as UserModel
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from rest_framework.utils.serializer_helpers import ReturnDict
 
 User: type[UserModel] = get_user_model()
@@ -58,75 +53,12 @@ def _masked_username(instance: UserModel, viewer: UserModel) -> str:
     )
 
 
-class UserCreateSerializer(serializers.ModelSerializer[UserModel]):
-    """Serializer used during the user registration process."""
+def _masked_email(instance: UserModel, viewer: UserModel) -> str | None:
+    """Email is private: visible only to the account owner and staff, None for everyone else."""
+    if viewer != instance and not viewer.is_staff:
+        return None
 
-    class Meta:
-        """Meta data for the class."""
-
-        model = User
-        fields = ("username", "password", "email", "gender")
-        extra_kwargs: ClassVar[dict[str, dict[str, bool]]] = {"password": {"write_only": True}}
-
-    def validate_password(self: Self, value: str) -> str:
-        """The validation function for password."""
-        django_validate_password(value)
-        return value
-
-    def create(self: Self, validated_data: Mapping[str, Any]) -> UserModel:
-        """Create a new User instance."""
-        user = User(
-            username=validated_data["username"],
-            email=validated_data["email"],
-        )
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
-
-
-class ChangeUsernameSerializer(serializers.ModelSerializer[UserModel]):
-    """Serializer used to change a user's own username."""
-
-    class Meta:
-        """Meta data for the class."""
-
-        model = User
-        fields = ("username",)
-
-    def validate_username(self: Self, value: str) -> str:
-        """Reject submitting the current username as the 'new' one."""
-        if self.instance is not None and value == self.instance.username:
-            message = "The new username must be different from the current one."
-            raise serializers.ValidationError(message)
-        return value
-
-
-class ChangePasswordSerializer(serializers.Serializer[UserModel]):
-    """Serializer used to change a user's own password."""
-
-    current_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True)
-    new_password_confirm = serializers.CharField(write_only=True)
-
-    def validate_current_password(self: Self, value: str) -> str:
-        """Check the current password against the requesting user."""
-        user: UserModel = self.context["request"].user
-        if not user.check_password(value):
-            message = "Current password is incorrect."
-            raise serializers.ValidationError(message)
-        return value
-
-    def validate_new_password(self: Self, value: str) -> str:
-        """Validate the new password against Django's password validators."""
-        django_validate_password(value)
-        return value
-
-    def validate(self: Self, attrs: dict[str, str]) -> dict[str, str]:
-        """Check that new_password and new_password_confirm match."""
-        if attrs["new_password"] != attrs["new_password_confirm"]:
-            message = "The new password and its confirmation do not match."
-            raise serializers.ValidationError(message)
-        return attrs
+    return instance.email
 
 
 class UserSimpleSerializer(serializers.ModelSerializer[UserModel]):
@@ -158,6 +90,7 @@ class UserSerializer(serializers.ModelSerializer[UserModel]):
     gender = serializers.CharField(source="get_gender_display", read_only=True)
     gravatar_url = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
 
     class Meta:
         """Meta data for the class."""
@@ -183,6 +116,11 @@ class UserSerializer(serializers.ModelSerializer[UserModel]):
         viewer: UserModel = self.context["request"].user
         return _masked_gravatar_url(instance, viewer)
 
+    def get_email(self: Self, instance: UserModel) -> str | None:
+        """Email is visible only to the account owner and staff."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_email(instance, viewer)
+
     def get_username(self: Self, instance: UserModel) -> str:
         """Mask the username for other viewers if it's moderated or the user is banned."""
         viewer: UserModel = self.context["request"].user
@@ -198,6 +136,7 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
     latest_game_list_updates = serializers.SerializerMethodField()
     gravatar_url = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
+    email = serializers.SerializerMethodField()
     warning_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -230,6 +169,11 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
         """Mask the username for other viewers if it's moderated or the user is banned."""
         viewer: UserModel = self.context["request"].user
         return _masked_username(instance, viewer)
+
+    def get_email(self: Self, instance: UserModel) -> str | None:
+        """Email is visible only to the account owner and staff."""
+        viewer: UserModel = self.context["request"].user
+        return _masked_email(instance, viewer)
 
     def get_warning_count(self: Self, instance: UserModel) -> int | None:
         """Get the number of moderation warnings issued to this user.

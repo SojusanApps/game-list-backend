@@ -9,7 +9,6 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from my_game_list.my_game_list.prometheus import custom_export_to_django_view
 from my_game_list.my_game_list.views import ApiVersion
@@ -33,8 +32,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/user/", include("my_game_list.users.urls")),
     path("api/game/", include("my_game_list.games.urls")),
     path("api/collection/", include("my_game_list.collections.urls")),

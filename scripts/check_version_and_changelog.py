@@ -1,15 +1,11 @@
 """This module is used as a git hook to check if the version and changelog have been changed."""
 
 import argparse
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 FILENAMES_TO_BE_MODIFIED = ("CHANGELOG.md", "src/my_game_list/__init__.py")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: list[str] | tuple[str] | None = None) -> int:
     """Check if version and changelog are updated."""
     parser = argparse.ArgumentParser()
     parser.add_argument("filenames", nargs="*", help="Filenames to check.")

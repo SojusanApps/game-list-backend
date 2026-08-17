@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from my_game_list.users.models import User
 
 
-def notify_send(  # noqa: PLR0913
+def notify_send(  # noqa: PLR0913, PLR0917, RUF100
     sender: models.Model,
     recipient: User | AnonymousUser,
     verb: str,

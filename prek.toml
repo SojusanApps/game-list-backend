@@ -1,0 +1,35 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+
+[[repos]]
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-yaml" },
+    { id = "check-json" },
+    { id = "mixed-line-ending", args = [
+        "--fix=lf",
+    ] },
+    { id = "debug-statements" },
+]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+
+[[repos]]
+repo = "https://github.com/psf/black"
+rev = "26.5.1"
+hooks = [{ id = "black" }]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.15.18"
+hooks = [{ id = "ruff-check" }]
+
+[[repos]]
+hooks = [
+    { id = "check-version-and-changelog", name = "Check version and changelog", entry = "python scripts/check_version_and_changelog.py", language = "python", pass_filenames = true, always_run = true, require_serial = true, stages = [
+        "pre-push",
+    ] },
+]
+repo = "local"

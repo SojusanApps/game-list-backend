@@ -854,7 +854,7 @@ class TranslationSuggestionViewSet(
             message = "Only a pending suggestion can be rejected."
             raise ValidationError(message)
 
-        rejection_reason = request.data.get("rejection_reason", "")
+        rejection_reason = request.data.get("rejection_reason", "") if isinstance(request.data, dict) else ""
         suggestion.status = TranslationSuggestion.Status.REJECTED
         suggestion.reviewed_by = request.user
         suggestion.reviewed_at = timezone.now()
