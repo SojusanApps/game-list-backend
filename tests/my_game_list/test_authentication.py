@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -120,18 +121,22 @@ def test_username_collision_on_sync_gets_a_numeric_suffix(
 
 @pytest.mark.django_db()
 @pytest.mark.usefixtures("_mock_keycloak_jwks")
-def test_is_staff_is_never_altered_by_token_data(
+def test_is_staff_is_untouched_when_nickname_reconciles_and_admin_role_unchanged(
     api_client: APIClient,
     make_keycloak_token: Callable[..., str],
 ) -> None:
-    """is_staff stays entirely backend-owned, regardless of token contents, on create or reconcile."""
+    """Reconciling username alone doesn't perturb is_staff when the admin role claim is unchanged."""
     staff_user = User.objects.create(
         keycloak_id="66666666-6666-6666-6666-666666666666",
         username="staff_old_name",
         email="staff@example.com",
         is_staff=True,
     )
-    token = make_keycloak_token(sub="66666666-6666-6666-6666-666666666666", nickname="staff_new_name")
+    token = make_keycloak_token(
+        sub="66666666-6666-6666-6666-666666666666",
+        nickname="staff_new_name",
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["admin"]}},
+    )
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     response = api_client.get(reverse("users:users-list"))
@@ -139,13 +144,7 @@ def test_is_staff_is_never_altered_by_token_data(
     assert response.status_code == status.HTTP_200_OK
     staff_user.refresh_from_db()
     assert staff_user.is_staff is True
-
-    new_token = make_keycloak_token(sub="77777777-7777-7777-7777-777777777777", nickname="brand_new_user")
-    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {new_token}")
-    response = api_client.get(reverse("users:users-list"))
-
-    assert response.status_code == status.HTTP_200_OK
-    assert User.objects.get(keycloak_id="77777777-7777-7777-7777-777777777777").is_staff is False
+    assert staff_user.username == "staff_new_name"
 
 
 @pytest.mark.django_db()
@@ -301,6 +300,7 @@ def test_new_sub_with_verified_email_links_to_existing_non_keycloak_user(
         nickname="my_kc_nickname",
         email="shared@example.com",
         email_verified=True,
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["admin"]}},
     )
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
@@ -375,3 +375,225 @@ def test_username_reconciliation_regenerates_slug_and_owned_collection_slugs(
     assert user.slug.startswith("fresh_nickname")
     assert collection.slug != old_collection_slug
     assert collection.slug.startswith("fresh_nickname")
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_admin_role_grants_is_staff_on_create(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """A never-seen sub whose token carries the client's "admin" role is created with is_staff=True."""
+    token = make_keycloak_token(
+        sub="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        nickname="new_admin",
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["admin"]}},
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb").is_staff is True
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_user_role_does_not_grant_is_staff_on_create(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """A never-seen sub whose token only carries the "user" role is created with is_staff=False."""
+    token = make_keycloak_token(
+        sub="cccccccc-cccc-cccc-cccc-cccccccccccc",
+        nickname="new_regular_user",
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["user"]}},
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="cccccccc-cccc-cccc-cccc-cccccccccccc").is_staff is False
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_admin_role_grants_is_staff_on_reconcile(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """An existing non-staff User whose token now carries the "admin" role is promoted."""
+    User.objects.create(
+        keycloak_id="dddddddd-dddd-dddd-dddd-dddddddddddd",
+        username="promoted_user",
+        email="promoted@example.com",
+        is_staff=False,
+    )
+    token = make_keycloak_token(
+        sub="dddddddd-dddd-dddd-dddd-dddddddddddd",
+        nickname="promoted_user",
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["admin"]}},
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="dddddddd-dddd-dddd-dddd-dddddddddddd").is_staff is True
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_admin_role_absent_revokes_is_staff_on_reconcile(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """An existing staff User whose token no longer carries the "admin" role has it revoked."""
+    User.objects.create(
+        keycloak_id="eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+        username="demoted_user",
+        email="demoted@example.com",
+        is_staff=True,
+    )
+    token = make_keycloak_token(
+        sub="eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+        nickname="demoted_user",
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["user"]}},
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee").is_staff is False
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_admin_role_absent_revokes_is_staff_on_link(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """A bootstrapped admin (is_staff=True, keycloak_id=None) whose Keycloak token lacks "admin" is demoted on link."""
+    admin = User.objects.create(
+        keycloak_id=None,
+        username="bootstrap_admin",
+        email="bootstrap_admin@example.com",
+        is_staff=True,
+    )
+    token = make_keycloak_token(
+        sub="ffffffff-ffff-ffff-ffff-ffffffffffff",
+        nickname="bootstrap_admin",
+        email="bootstrap_admin@example.com",
+        email_verified=True,
+        resource_access={settings.KEYCLOAK_CLIENT_ID: {"roles": ["user"]}},
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    admin.refresh_from_db()
+    assert admin.is_staff is False
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+@pytest.mark.parametrize(
+    ("gender_claim", "expected_gender"),
+    [
+        pytest.param("male", "M", id="male"),
+        pytest.param("female", "F", id="female"),
+        pytest.param("prefer_not_to_say", "", id="prefer_not_to_say"),
+    ],
+)
+def test_gender_claim_is_mapped_on_create(
+    gender_claim: str,
+    expected_gender: str,
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """The gender claim is mapped to Gender.MALE/FEMALE, or blank for "prefer_not_to_say"."""
+    token = make_keycloak_token(
+        sub="11111111-2222-3333-4444-555555555555",
+        nickname="gendered_user",
+        gender=gender_claim,
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="11111111-2222-3333-4444-555555555555").gender == expected_gender
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_missing_gender_claim_defaults_to_blank_on_create(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """No gender claim at all is treated the same as "prefer_not_to_say" - blank, not an error."""
+    token = make_keycloak_token(sub="66666666-7777-8888-9999-000000000000", nickname="no_gender_user")
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="66666666-7777-8888-9999-000000000000").gender == ""
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_gender_is_resynced_on_reconcile(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """An existing User's gender is updated to reflect the token's current gender claim."""
+    User.objects.create(
+        keycloak_id="12121212-3434-5656-7878-909090909090",
+        username="regendering_user",
+        email="regender@example.com",
+        gender="M",
+    )
+    token = make_keycloak_token(
+        sub="12121212-3434-5656-7878-909090909090",
+        nickname="regendering_user",
+        gender="female",
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert User.objects.get(keycloak_id="12121212-3434-5656-7878-909090909090").gender == "F"
+
+
+@pytest.mark.django_db()
+@pytest.mark.usefixtures("_mock_keycloak_jwks")
+def test_gender_is_synced_on_link(
+    api_client: APIClient,
+    make_keycloak_token: Callable[..., str],
+) -> None:
+    """Gender is synced for a bootstrapped account being linked by verified email, same as create/reconcile."""
+    linked_user = User.objects.create(
+        keycloak_id=None,
+        username="link_gender_user",
+        email="link_gender@example.com",
+        gender="",
+    )
+    token = make_keycloak_token(
+        sub="13131313-1414-1515-1616-171717171717",
+        nickname="link_gender_user",
+        email="link_gender@example.com",
+        email_verified=True,
+        gender="male",
+    )
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    linked_user.refresh_from_db()
+    assert linked_user.gender == "M"

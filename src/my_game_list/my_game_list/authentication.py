@@ -12,6 +12,8 @@ from drf_spectacular.plumbing import build_bearer_security_scheme_object
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from my_game_list.users.models import Gender
+
 if TYPE_CHECKING:
     from rest_framework.request import Request
 
@@ -19,12 +21,33 @@ if TYPE_CHECKING:
 
 User: type[UserModel] = get_user_model()
 
+_GENDER_CLAIM_MAP = {
+    "male": Gender.MALE,
+    "female": Gender.FEMALE,
+}
+
 
 @cache
 def _get_jwks_client() -> jwt.PyJWKClient:
     """Return a lazily-created, process-wide PyJWKClient pointed at the realm's certs endpoint."""
     certs_url = f"{settings.KEYCLOAK_SERVER_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs"
     return jwt.PyJWKClient(certs_url, cache_keys=True)
+
+
+def _has_admin_role(claims: dict[str, Any]) -> bool:
+    """Whether the token's client roles (`resource_access.<KEYCLOAK_CLIENT_ID>.roles`) include "admin"."""
+    resource_access = claims.get("resource_access", {})
+    client_roles = resource_access.get(settings.KEYCLOAK_CLIENT_ID, {}).get("roles", [])
+    return "admin" in client_roles
+
+
+def _map_gender(claims: dict[str, Any]) -> str:
+    """Map the token's `gender` claim to `Gender.MALE`/`Gender.FEMALE`, or blank otherwise.
+
+    Blank covers "prefer_not_to_say" as well as a missing or unrecognized claim - all three mean
+    "not specified", which the model already represents as an empty string (`blank=True`).
+    """
+    return _GENDER_CLAIM_MAP.get(claims.get("gender", ""), "")
 
 
 def _unique_username(nickname: str, *, exclude_pk: int | None = None) -> str:
@@ -87,13 +110,13 @@ class KeycloakAuthentication(BaseAuthentication):
         return claims
 
     def _resolve_user(self: Self, claims: dict[str, Any]) -> UserModel:
-        """Look up or provision the local User for these claims, reconciling username on every call."""
+        """Look up or provision the local User for these claims, syncing profile fields on every call."""
         try:
             user = User.objects.get(keycloak_id=claims["sub"])
         except User.DoesNotExist:
             user = self._link_or_create_user(claims)
         else:
-            self._sync_username(user, claims)
+            self._sync_profile(user, claims)
 
         return user
 
@@ -108,7 +131,7 @@ class KeycloakAuthentication(BaseAuthentication):
             if existing_user is not None:
                 existing_user.keycloak_id = claims["sub"]
                 existing_user.save()
-                self._sync_username(existing_user, claims)
+                self._sync_profile(existing_user, claims)
                 return existing_user
 
         try:
@@ -117,6 +140,8 @@ class KeycloakAuthentication(BaseAuthentication):
                     keycloak_id=claims["sub"],
                     username=_unique_username(claims["nickname"]),
                     email=claims["email"],
+                    is_staff=_has_admin_role(claims),
+                    gender=_map_gender(claims),
                 )
         except IntegrityError as exc:
             raise AuthenticationFailed from exc
@@ -125,25 +150,44 @@ class KeycloakAuthentication(BaseAuthentication):
         user.save()
         return user
 
-    def _sync_username(self: Self, user: UserModel, claims: dict[str, Any]) -> None:
-        """Sync `username` from the current `nickname` claim, regenerating slug (and owned Collection slugs).
+    def _sync_profile(self: Self, user: UserModel, claims: dict[str, Any]) -> None:
+        """Sync mutable profile fields from the token on every call: `username` (+ slug), `is_staff`, `gender`.
 
-        Only touches anything if `username` actually differs, and only regenerates slugs when it
-        does - `User.slug`/`Collection.slug` are derived from `username`, so they go stale the
-        moment it changes unless explicitly cleared (ADR-0003), same as the old change-username
-        endpoint did before it was removed (ADR-0010).
+        `username` reconciliation regenerates `User.slug` and every owned `Collection.slug` when it
+        actually changes - they're derived from `username` and go stale the moment it changes unless
+        explicitly cleared (ADR-0003), same as the old change-username endpoint did before it was
+        removed (ADR-0010).
+
+        `is_staff` is derived from the client's "admin" role on the token (ADR-0014, superseding the
+        "is_staff is never touched by Keycloak" part of ADR-0006): present grants staff, absent revokes
+        it - including on an account that was previously granted `is_staff` outside Keycloak.
+
+        `gender` is derived from the token's `gender` claim; "prefer_not_to_say", missing, or an
+        unrecognized value all map to blank, matching the model's existing "not specified" state.
         """
-        if user.username == claims["nickname"]:
+        username_changed = user.username != claims["nickname"]
+        is_admin = _has_admin_role(claims)
+        role_changed = user.is_staff != is_admin
+        gender = _map_gender(claims)
+        gender_changed = user.gender != gender
+
+        if not username_changed and not role_changed and not gender_changed:
             return
 
         with transaction.atomic():
-            user.username = _unique_username(claims["nickname"], exclude_pk=user.pk)
-            user.slug = ""
+            if username_changed:
+                user.username = _unique_username(claims["nickname"], exclude_pk=user.pk)
+                user.slug = ""
+            if role_changed:
+                user.is_staff = is_admin
+            if gender_changed:
+                user.gender = gender
             user.save()
 
-            for collection in user.collections.all():
-                collection.slug = ""
-                collection.save()
+            if username_changed:
+                for collection in user.collections.all():
+                    collection.slug = ""
+                    collection.save()
 
 
 class KeycloakAuthenticationScheme(OpenApiAuthenticationExtension):  # type: ignore[no-untyped-call]

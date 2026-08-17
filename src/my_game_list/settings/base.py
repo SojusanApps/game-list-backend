@@ -178,6 +178,7 @@ REST_FRAMEWORK = {
 KEYCLOAK_SERVER_URL = oeg("KEYCLOAK_SERVER_URL", "https://keycloak_server_url_to_change_on_production")
 KEYCLOAK_REALM = oeg("KEYCLOAK_REALM", "my-game-list")
 KEYCLOAK_AUDIENCE = oeg("KEYCLOAK_AUDIENCE", "my-game-list-frontend")
+KEYCLOAK_CLIENT_ID = oeg("KEYCLOAK_CLIENT_ID", "my-game-list-frontend")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "MyGameList API",
