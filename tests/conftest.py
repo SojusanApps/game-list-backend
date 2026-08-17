@@ -13,7 +13,7 @@ from django.core.management import call_command
 from freezegun import freeze_time
 from model_bakery import baker
 from rest_framework.test import APIClient
-from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
+from testcontainers.postgres import PostgresContainer
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -39,7 +39,7 @@ def django_db_setup(
             {
                 "ENGINE": "django.db.backends.postgresql",
                 "HOST": postgres.get_container_host_ip(),
-                "PORT": postgres.get_exposed_port(5432),
+                "PORT": str(postgres.get_exposed_port(5432)),
                 "NAME": postgres.dbname,
                 "USER": postgres.username,
                 "PASSWORD": postgres.password,

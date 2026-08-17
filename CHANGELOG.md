@@ -17,6 +17,7 @@
 * Removed the pre-Keycloak self-service authentication surface, now that the frontend has no login/register UI of its own and Keycloak is the sole token issuer: self-registration (`POST /user/users/`), `POST /token/`, `POST /token/refresh/`, `POST /user/users/change-password/`, and `POST /user/users/change-username/`. Dropped the now-unused `djangorestframework-simplejwt` dependency.
 * Fixed a pre-existing bug: `email` was visible to any authenticated viewer on `GET /user/users/` and `GET /user/users/{id}/`, not just the account owner, contradicting those endpoints' own documented behavior. Now restricted to the account owner and staff, matching the existing `warning_count` visibility rule.
 * Fixed `REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"]` being a bare string instead of a tuple, which crashes DRF's default `get_permissions()` — never hit before since every `ViewSet` already set its own `permission_classes` explicitly, until `UserViewSet` started relying on the default after its registration-only `get_permissions()` override was removed.
+* Updated dependencies.
 
 ## v. [4.27.0] - 21.07.2026
 

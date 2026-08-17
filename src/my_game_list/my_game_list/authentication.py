@@ -198,7 +198,7 @@ class KeycloakAuthenticationScheme(OpenApiAuthenticationExtension):  # type: ign
 
     def get_security_definition(self: Self, auto_schema: Any) -> dict[str, Any]:  # noqa: ANN401, ARG002
         """Return the OpenAPI security scheme object for this authenticator."""
-        return build_bearer_security_scheme_object(  # type: ignore[no-any-return, no-untyped-call]
+        return build_bearer_security_scheme_object(
             header_name="Authorization",
             token_prefix="Bearer",  # noqa: S106
             bearer_format="JWT",

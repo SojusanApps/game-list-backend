@@ -62,6 +62,18 @@ ModelType = TypeVar(
 )
 
 
+# modeltranslation swaps in a manager django-stubs can't resolve for these target
+# models (see the games.models mypy override), which makes the plugin infer the
+# auto-generated M2M "through" model as `Never`. Cast once here instead of
+# scattering `type: ignore` comments over every usage below.
+_GenreThrough = cast("type[Any]", Game.genres.through)
+_PlatformThrough = cast("type[Any]", Game.platforms.through)
+_GameModeThrough = cast("type[Any]", Game.game_modes.through)
+_PlayerPerspectiveThrough = cast("type[Any]", Game.player_perspectives.through)
+_GameEngineThrough = cast("type[Any]", Game.game_engines.through)
+_ExternalGameThrough = cast("type[Any]", Game.external_games.through)
+
+
 @dataclass
 class RecursiveDataCollector:
     """Collector for recursive data during import."""
@@ -210,7 +222,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         item_from_igdb: IGDBObject,
         company_igdb_to_db_mapping: dict[int, Company],
         extra_mappings: dict[str, dict[int, Any]] | None = None,
-    ) -> dict[str, str | int | None | datetime | date | Company | GameType | GameStatus | list[str]]:
+    ) -> dict[str, str | int | datetime | date | Company | GameType | GameStatus | list[str] | None]:
         """
         Get the input for the model from the item from the IGDB database.
 
@@ -487,7 +499,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if genres_ids := game_from_igdb.genres:
             rel_containers["genres"].extend(
                 [
-                    Game.genres.through(game_id=imported_game.id, genre_id=mappings["genres"][gid])
+                    _GenreThrough(game_id=imported_game.id, genre_id=mappings["genres"][gid])
                     for gid in genres_ids
                     if gid in mappings["genres"]
                 ],
@@ -495,7 +507,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if platform_ids := game_from_igdb.platforms:
             rel_containers["platforms"].extend(
                 [
-                    Game.platforms.through(game_id=imported_game.id, platform_id=mappings["platforms"][pid])
+                    _PlatformThrough(game_id=imported_game.id, platform_id=mappings["platforms"][pid])
                     for pid in platform_ids
                     if pid in mappings["platforms"]
                 ],
@@ -503,7 +515,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if mode_ids := game_from_igdb.game_modes:
             rel_containers["modes"].extend(
                 [
-                    Game.game_modes.through(game_id=imported_game.id, gamemode_id=mappings["game_modes"][mid])
+                    _GameModeThrough(game_id=imported_game.id, gamemode_id=mappings["game_modes"][mid])
                     for mid in mode_ids
                     if mid in mappings["game_modes"]
                 ],
@@ -511,7 +523,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if pp_ids := game_from_igdb.player_perspectives:
             rel_containers["perspectives"].extend(
                 [
-                    Game.player_perspectives.through(
+                    _PlayerPerspectiveThrough(
                         game_id=imported_game.id,
                         playerperspective_id=mappings["player_perspectives"][pid],
                     )
@@ -522,7 +534,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if engine_ids := game_from_igdb.game_engines:
             rel_containers["engines"].extend(
                 [
-                    Game.game_engines.through(game_id=imported_game.id, gameengine_id=mappings["game_engines"][eid])
+                    _GameEngineThrough(game_id=imported_game.id, gameengine_id=mappings["game_engines"][eid])
                     for eid in engine_ids
                     if eid in mappings["game_engines"]
                 ],
@@ -530,7 +542,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if external_game_ids := game_from_igdb.external_games:
             rel_containers["external_games"].extend(
                 [
-                    Game.external_games.through(
+                    _ExternalGameThrough(
                         game_id=imported_game.id,
                         externalgame_id=mappings["external_games"][egid],
                     )
@@ -559,12 +571,12 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         self: Self,
         rel_containers: dict[str, list[Any]],
     ) -> None:
-        Game.genres.through.objects.bulk_create(rel_containers["genres"], ignore_conflicts=True)
-        Game.platforms.through.objects.bulk_create(rel_containers["platforms"], ignore_conflicts=True)
-        Game.game_modes.through.objects.bulk_create(rel_containers["modes"], ignore_conflicts=True)
-        Game.player_perspectives.through.objects.bulk_create(rel_containers["perspectives"], ignore_conflicts=True)
-        Game.game_engines.through.objects.bulk_create(rel_containers["engines"], ignore_conflicts=True)
-        Game.external_games.through.objects.bulk_create(rel_containers["external_games"], ignore_conflicts=True)
+        _GenreThrough.objects.bulk_create(rel_containers["genres"], ignore_conflicts=True)
+        _PlatformThrough.objects.bulk_create(rel_containers["platforms"], ignore_conflicts=True)
+        _GameModeThrough.objects.bulk_create(rel_containers["modes"], ignore_conflicts=True)
+        _PlayerPerspectiveThrough.objects.bulk_create(rel_containers["perspectives"], ignore_conflicts=True)
+        _GameEngineThrough.objects.bulk_create(rel_containers["engines"], ignore_conflicts=True)
+        _ExternalGameThrough.objects.bulk_create(rel_containers["external_games"], ignore_conflicts=True)
 
     def _handle_recursive_relations(
         self: Self,
@@ -804,7 +816,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
             ),
         )
 
-    def handle(self: Self, *args: None, **options: dict[str, int | None | str]) -> None:
+    def handle(self: Self, *args: None, **options: dict[str, int | str | None]) -> None:
         """Handle the command logic."""
         self.stdout.write(f"{args=}")
         self.stdout.write(f"{options=}")
