@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.0.1] - 18.08.2026
+
+* Limit users to active in users endpoints - only admins can see all.
+
 ## v. [5.0.0] - 17.08.2026
 
 * Migrated authentication from self-issued `SimpleJWT` tokens to Keycloak-issued access tokens — a hard cutover, not a dual-accept transition period.

@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 if TYPE_CHECKING:
+    from django.db.models import QuerySet
     from rest_framework.request import Request
 
 from my_game_list.users.filters import UserFilterSet
@@ -24,7 +25,8 @@ User: type[UserModel] = get_user_model()
 @extend_schema_view(
     list=extend_schema(
         description=(
-            "List user accounts. Returns public user information for all users. "
+            "List user accounts. A non-staff user only sees active accounts; "
+            "is_staff users see every account, active or inactive. "
             "Filter by username (partial match), gender, or active status."
         ),
         parameters=[
@@ -48,7 +50,7 @@ User: type[UserModel] = get_user_model()
     ),
     retrieve=extend_schema(
         description=(
-            "Retrieve a user account by ID. "
+            "Retrieve a user account by ID. Non-staff users get a 404 for an inactive account. "
             "The authenticated account owner receives additional private fields "
             "(e.g. email address) that are not visible to other users."
         ),
@@ -60,6 +62,19 @@ class UserViewSet(GenericViewSet[UserModel], ListModelMixin, RetrieveModelMixin)
     queryset = User.objects.all()
     filterset_class = UserFilterSet
     permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self: Self) -> QuerySet[UserModel]:
+        """Scope visible users: staff see everyone, everyone else sees only active accounts."""
+        user = self.request.user
+        queryset: QuerySet[UserModel] = super().get_queryset()
+
+        if not user.is_authenticated:
+            return queryset.none()
+
+        if user.is_staff:
+            return queryset
+
+        return queryset.filter(is_active=True)
 
     def get_serializer_class(self: Self) -> type[UserSerializer | UserDetailSerializer]:
         """Get the serializer class for the User model."""

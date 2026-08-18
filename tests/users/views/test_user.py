@@ -5,6 +5,7 @@ from unittest.mock import ANY
 
 import pytest
 from django.contrib.auth import get_user_model
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -82,6 +83,57 @@ def test_list_users(authenticated_api_client: APIClient, admin_user_fixture: Use
             },
         ],
     }
+
+
+@pytest.mark.django_db()
+def test_list_users_excludes_inactive_for_non_staff(
+    authenticated_api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """A non-staff caller does not see inactive accounts in the list."""
+    baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = authenticated_api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {result["id"] for result in response.json()["results"]}
+    assert returned_ids == {user_fixture.pk}
+
+
+@pytest.mark.django_db()
+def test_list_users_includes_inactive_for_staff(
+    admin_authenticated_api_client: APIClient,
+    admin_user_fixture: UserModel,
+) -> None:
+    """A staff caller sees inactive accounts in the list."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = admin_authenticated_api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {result["id"] for result in response.json()["results"]}
+    assert returned_ids == {admin_user_fixture.pk, inactive_user.pk}
+
+
+@pytest.mark.django_db()
+def test_get_inactive_user_not_found_for_non_staff(authenticated_api_client: APIClient) -> None:
+    """A non-staff caller gets a 404 when retrieving an inactive account by ID."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = authenticated_api_client.get(reverse("users:users-detail", (inactive_user.pk,)))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db()
+def test_get_inactive_user_found_for_staff(admin_authenticated_api_client: APIClient) -> None:
+    """A staff caller can retrieve an inactive account by ID."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = admin_authenticated_api_client.get(reverse("users:users-detail", (inactive_user.pk,)))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == inactive_user.pk
 
 
 @pytest.mark.django_db()
