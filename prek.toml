@@ -23,7 +23,7 @@ hooks = [{ id = "black" }]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.18"
+rev = "v0.16.3"
 hooks = [{ id = "ruff-check" }]
 
 [[repos]]
@@ -31,5 +31,6 @@ hooks = [
     { id = "check-version-and-changelog", name = "Check version and changelog", entry = "python scripts/check_version_and_changelog.py", language = "python", pass_filenames = true, always_run = true, require_serial = true, stages = [
         "pre-push",
     ] },
+    { id = "mypy", name = "mypy", entry = "uv run mypy . --strict", language = "system", pass_filenames = false, always_run = true, require_serial = true },
 ]
 repo = "local"
