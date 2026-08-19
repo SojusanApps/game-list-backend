@@ -53,6 +53,7 @@ def test_tier_choices() -> None:
     assert Tier.C == "C"
     assert Tier.D == "D"
     assert Tier.E == "E"
+    assert Tier.F == "F"
 
 
 @pytest.mark.django_db()

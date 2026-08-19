@@ -42,6 +42,7 @@ class Tier(models.TextChoices):
     C = "C", _("C Tier")
     D = "D", _("D Tier")
     E = "E", _("E Tier")
+    F = "F", _("F Tier")
 
 
 class Collection(BaseModel):
@@ -157,7 +158,7 @@ class CollectionItem(BaseModel):
         choices=Tier.choices,
         blank=True,
         db_index=True,
-        help_text="Optional tier classification for TIER-type collections (S, A, B, C, D, or E).",
+        help_text="Optional tier classification for TIER-type collections (S, A, B, C, D, E, or F).",
     )
     description = models.TextField(
         _("description"),

@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.2.0] - 19.08.2026
+
+* Added `F` tier to the `Tier` choices, for `CollectionItem`s in `TIER`-type collections.
+
 ## v. [5.1.1] - 19.08.2026
 
 * Added base class for the custom errors `SojusanGameListError`.
