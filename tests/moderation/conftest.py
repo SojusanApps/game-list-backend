@@ -37,6 +37,7 @@ def other_user_game_review_fixture(other_user_fixture: UserModel) -> GameReview:
     game: Game = baker.make("games.Game")
     return GameReview.objects.create(
         review="This is a review with harassment in it.",
+        recommendation=GameReview.Recommendation.NOT_RECOMMENDED,
         game=game,
         user=other_user_fixture,
     )

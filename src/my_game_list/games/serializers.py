@@ -211,7 +211,7 @@ class GameReviewSerializer(serializers.ModelSerializer[GameReview]):
         """Meta data for the game review serializer."""
 
         model = GameReview
-        fields = ("id", "score", "created_at", "review", "game", "user")
+        fields = ("id", "score", "recommendation", "created_at", "review", "game", "user")
 
     def get_score(self: Self, instance: GameReview) -> int | None:
         """Get user score for the this game."""
@@ -243,7 +243,7 @@ class GameReviewCreateSerializer(serializers.ModelSerializer[GameReview]):
         """Meta data for the game review create serializer."""
 
         model = GameReview
-        fields = ("id", "created_at", "review", "game", "user")
+        fields = ("id", "created_at", "review", "recommendation", "game", "user")
 
 
 class GenreSerializer(BaseDictionarySerializer):

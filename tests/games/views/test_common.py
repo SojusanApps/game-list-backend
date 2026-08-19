@@ -13,6 +13,7 @@ from rest_framework.reverse import reverse
 from my_game_list.games.models import (
     Game,
     GameListStatus,
+    GameReviewRecommendation,
 )
 
 if TYPE_CHECKING:
@@ -282,12 +283,14 @@ def test_unauthorized_access_detail(viewname: str, api_client: APIClient) -> Non
                 "count": 1,
                 "next": None,
                 "previous": None,
+                "recommendation_counts": None,
                 "results": [
                     {
                         "id": ANY,
                         "game": ANY,
                         "user": ANY,
                         "score": None,
+                        "recommendation": GameReviewRecommendation.RECOMMENDED.value,
                         "review": "test_review",
                         "created_at": "2023-06-22T16:47:12Z",
                     },
@@ -582,6 +585,7 @@ def test_list_model(
                 "user": ANY,
                 "review": "test_review",
                 "score": None,
+                "recommendation": GameReviewRecommendation.RECOMMENDED.value,
                 "created_at": "2023-06-22T16:47:12Z",
             },
             id="Get the game review by id.",
@@ -804,6 +808,7 @@ def test_get_model_detail(
             "games:game-reviews-list",
             {
                 "review": "test review - new",
+                "recommendation": GameReviewRecommendation.RECOMMENDED.value,
             },
             {
                 "id": ANY,
@@ -892,6 +897,7 @@ def test_create_model(
             "game_review_fixture",
             {
                 "review": "Updated review.",
+                "recommendation": GameReviewRecommendation.NOT_RECOMMENDED.value,
             },
             {
                 "created_at": "2023-06-22T16:47:12Z",

@@ -24,7 +24,12 @@ def test_create_rejects_self_report(
 ) -> None:
     """A user cannot report their own review."""
     game: Game = baker.make("games.Game")
-    own_review = GameReview.objects.create(review="my own review", game=game, user=user_fixture)
+    own_review = GameReview.objects.create(
+        review="my own review",
+        recommendation=GameReview.Recommendation.RECOMMENDED,
+        game=game,
+        user=user_fixture,
+    )
 
     payload = {
         "target_type": ReportTargetType.REVIEW,

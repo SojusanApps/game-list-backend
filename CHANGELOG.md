@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.1.0] - 18.08.2026
+
+* Added `recommendation` field to the `GameReview`.
+
 ## v. [5.0.1] - 18.08.2026
 
 * Limit users to active in users endpoints - only admins can see all.

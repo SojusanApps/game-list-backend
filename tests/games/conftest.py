@@ -159,6 +159,7 @@ def game_review_fixture(user_fixture: UserModel, game_fixture: Game) -> GameRevi
     """A fixture with a test game review."""
     return GameReview.objects.create(
         review="test_review",
+        recommendation=GameReview.Recommendation.RECOMMENDED,
         game=game_fixture,
         user=user_fixture,
     )

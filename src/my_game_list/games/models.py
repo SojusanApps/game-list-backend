@@ -233,8 +233,18 @@ class GameList(BaseModel):
         return f"{self.user.username} - {self.game.title}"
 
 
+class GameReviewRecommendation(models.TextChoices):
+    """Whether a reviewer recommends the game."""
+
+    RECOMMENDED = "recommended", _("Recommended")
+    NOT_RECOMMENDED = "not_recommended", _("Not Recommended")
+    UNDECIDED = "undecided", _("Undecided")
+
+
 class GameReview(BaseModel):
     """Contains reviews for games."""
+
+    Recommendation = GameReviewRecommendation
 
     created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
     review = models.TextField(
@@ -242,6 +252,12 @@ class GameReview(BaseModel):
         blank=True,
         max_length=1000,
         help_text="The review text.",
+    )
+    recommendation = models.CharField(
+        _("recommendation"),
+        max_length=16,
+        choices=GameReviewRecommendation.choices,
+        help_text="Whether the reviewer recommends this game (Recommended, Not Recommended, Undecided).",
     )
     is_moderated = models.BooleanField(
         _("is moderated"),

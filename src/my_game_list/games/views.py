@@ -6,6 +6,7 @@ import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import Count
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -13,6 +14,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
@@ -45,6 +47,7 @@ from my_game_list.games.models import (
     GameMedia,
     GameMode,
     GameReview,
+    GameReviewRecommendation,
     GameStatus,
     GameType,
     Genre,
@@ -653,12 +656,37 @@ class GameListViewSet(ModelViewSet[GameList]):
         return sorted(rows, key=lambda row: row["title"])
 
 
+class GameReviewPagination(PageNumberPagination):
+    """Paginates GameReview listings; documents the extra `recommendation_counts` field for the OpenAPI schema."""
+
+    def get_paginated_response_schema(self: Self, schema: dict[str, Any]) -> dict[str, Any]:
+        """Add `recommendation_counts` to the paginated response schema."""
+        response_schema = super().get_paginated_response_schema(schema)
+        response_schema["properties"]["recommendation_counts"] = {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                GameReviewRecommendation.RECOMMENDED.value: {"type": "integer"},
+                GameReviewRecommendation.NOT_RECOMMENDED.value: {"type": "integer"},
+                GameReviewRecommendation.UNDECIDED.value: {"type": "integer"},
+            },
+            "description": (
+                "Count of reviews per recommendation for the game in the `game` filter, ignoring the "
+                "`recommendation` filter itself; null when no `game` filter is given."
+            ),
+        }
+        return response_schema
+
+
 @extend_schema_view(
     list=extend_schema(
         description=(
             "List game reviews. "
-            "Each review contains a numeric score and an optional text body submitted by a user. "
-            "Filter by score, game ID, or reviewer user ID."
+            "Each review contains a numeric score, a recommendation, and an optional text body submitted "
+            "by a user. Filter by score, recommendation, game ID, or reviewer user ID. "
+            "When filtered by game ID, the response also includes a `recommendation_counts` breakdown "
+            "(counts of Recommended / Not Recommended / Undecided across all that game's reviews, "
+            "ignoring the `recommendation` filter itself); it is `null` when no game ID filter is given."
         ),
         parameters=[
             OpenApiParameter(
@@ -668,6 +696,10 @@ class GameListViewSet(ModelViewSet[GameList]):
             OpenApiParameter(
                 name="score",
                 description="Filter by exact review score.",
+            ),
+            OpenApiParameter(
+                name="recommendation",
+                description="Filter by recommendation (recommended, not_recommended, undecided).",
             ),
             OpenApiParameter(
                 name="game",
@@ -701,6 +733,7 @@ class GameReviewViewSet(ModelViewSet[GameReview]):
     queryset = GameReview.objects.all()
     permission_classes = (IsAuthenticated,)
     filterset_class = GameReviewFilterSet
+    pagination_class = GameReviewPagination
 
     def get_serializer_class(
         self: Self,
@@ -716,6 +749,27 @@ class GameReviewViewSet(ModelViewSet[GameReview]):
             ]
             else GameReviewSerializer
         )
+
+    def list(self: Self, request: Request, *args: Any, **kwargs: Any) -> Response:  # noqa: ANN401
+        """List game reviews, adding a per-game recommendation breakdown when filtered by game."""
+        response = super().list(request, *args, **kwargs)
+        response.data["recommendation_counts"] = self._get_recommendation_counts(request)
+        return response
+
+    def _get_recommendation_counts(self: Self, request: Request) -> dict[str, int] | None:
+        """Count reviews per recommendation for the game in the `game` query param, ignoring other filters."""
+        game_id_param = request.query_params.get("game")
+        if game_id_param is None or not game_id_param.isdigit():
+            return None
+
+        counts: dict[str, int] = dict.fromkeys(GameReviewRecommendation.values, 0)
+        rows = (
+            GameReview.objects.filter(game_id=int(game_id_param)).values("recommendation").annotate(total=Count("id"))
+        )
+        for row in rows:
+            counts[row["recommendation"]] = row["total"]
+
+        return counts
 
 
 @extend_schema_view(

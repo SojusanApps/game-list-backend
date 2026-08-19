@@ -30,6 +30,7 @@ def test_third_accepted_report_bans_user_and_notification_reflects_ban(
     reviews: list[GameReview] = [
         GameReview.objects.create(
             review=f"review {i}",
+            recommendation=GameReview.Recommendation.UNDECIDED,
             game=baker.make("games.Game"),
             user=other_user_fixture,
         )

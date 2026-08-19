@@ -48,7 +48,12 @@ def test_banned_user_can_still_create_a_review(
 
     response = api_client.post(
         reverse("games:game-reviews-list"),
-        {"game": game_fixture.id, "review": "a review from a banned user", "user": user_fixture.id},
+        {
+            "game": game_fixture.id,
+            "review": "a review from a banned user",
+            "recommendation": "recommended",
+            "user": user_fixture.id,
+        },
         format="json",
     )
 

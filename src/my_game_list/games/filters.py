@@ -16,6 +16,7 @@ from my_game_list.games.models import (
     GameMedia,
     GameMode,
     GameReview,
+    GameReviewRecommendation,
     GameStatus,
     GameType,
     Genre,
@@ -147,6 +148,7 @@ class GameReviewFilterSet(filters.FilterSet):
     score = filters.NumberFilter()
     game = filters.NumberFilter(field_name="game__id")
     user = filters.NumberFilter(field_name="user__id")
+    recommendation = filters.ChoiceFilter(choices=GameReviewRecommendation.choices)
 
     class Meta:
         """Meta class for game review filter set."""
@@ -157,6 +159,7 @@ class GameReviewFilterSet(filters.FilterSet):
             "score",
             "game",
             "user",
+            "recommendation",
         )
 
 
