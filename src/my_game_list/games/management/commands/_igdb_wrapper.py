@@ -10,6 +10,8 @@ import requests
 from django.conf import settings
 from requests_futures.sessions import FuturesSession
 
+from my_game_list.my_game_list.exceptions import SojusanGameListError
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -257,7 +259,7 @@ class IGDBGameResponse(BaseIGDBResponse):
             ]
 
 
-class IGDBInteractionError(Exception):
+class IGDBInteractionError(SojusanGameListError):
     """IGDB interaction error."""
 
 

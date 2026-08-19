@@ -7,6 +7,10 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 
 
+class SojusanGameListError(Exception):
+    """Base class for all exceptions in the application."""
+
+
 class ConflictException(APIException):
     """Exception class for http conflict status."""
 
@@ -15,7 +19,7 @@ class ConflictException(APIException):
     default_code = "conflict"
 
 
-class SerializerValidationDetailError(Exception):
+class SerializerValidationDetailError(SojusanGameListError):
     """Exception class for wrong type of the validation details."""
 
     def __init__(self: Self) -> None:

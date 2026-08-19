@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.1.1] - 19.08.2026
+
+* Added base class for the custom errors `SojusanGameListError`.
+
 ## v. [5.1.0] - 18.08.2026
 
 * Added `recommendation` field to the `GameReview`.
