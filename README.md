@@ -106,7 +106,7 @@ Tag Legend:
       -e POSTGRES_USER=my_game_list \
       -e POSTGRES_PASSWORD=my_game_list \
       -v my-game-list-postgres-data:/var/lib/postgresql \
-      -d postgres:18.3-alpine
+      -d postgres:18.4-alpine
    ```
 
 1. Run database migrations:

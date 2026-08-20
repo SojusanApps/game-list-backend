@@ -47,7 +47,7 @@ app_db:
         -e POSTGRES_USER=my_game_list \
         -e POSTGRES_PASSWORD=my_game_list \
         -v dev-my-game-list-postgres-data:/var/lib/postgresql \
-        -d postgres:18.3-alpine
+        -d postgres:18.4-alpine
 
 # Run a Docker container with the test database
 test_db:
@@ -56,7 +56,7 @@ test_db:
         -e POSTGRES_PASSWORD=pytest_postgresql \
         -e POSTGRES_DB=pytest_postgresql \
         -p 127.0.0.1:9999:5432 \
-        -d postgres:18.3-alpine
+        -d postgres:18.4-alpine
 
 # Run all tests for the application
 test:

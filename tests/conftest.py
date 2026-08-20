@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 User: type[UserModel] = get_user_model()
 
-_POSTGRES_IMAGE = "postgres:18.3-alpine"
+_POSTGRES_IMAGE = "postgres:18.4-alpine"
 
 
 @pytest.fixture(scope="session")

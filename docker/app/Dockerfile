@@ -23,8 +23,10 @@ ENV UV_LINK_MODE=copy
 # Ensure installed tools can be executed out of the box
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
+# Remove the `git` installation once the packages for `django-prometheus` and `django-celery-beat` are updated to support newer Django
 RUN apt-get update \
-    && apt-get -y install --no-install-recommends curl=8.14.1-2+deb13u2 \
+    && apt-get -y install --no-install-recommends curl=8.14.1-2+deb13u4 \
+    && apt-get -y install --no-install-recommends git=1:2.47.3-0+deb13u1 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the project's dependencies using the lockfile and settings

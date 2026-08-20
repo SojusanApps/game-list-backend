@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.2.2] - 20.08.2026
+
+* Updated docker containers.
+
 ## v. [5.2.1] - 20.08.2026
 
 * Added `mypy` check to `prek`.
