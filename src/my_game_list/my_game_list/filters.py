@@ -1,4 +1,4 @@
-"""Base filters for dictionary models."""
+"""Base filters for lookup models."""
 
 from collections.abc import Collection  # noqa: TC003
 from typing import Any, cast
@@ -48,8 +48,8 @@ class BilingualModelMultipleChoiceFilter(filters.ModelMultipleChoiceFilter):
     field_class = BilingualModelMultipleChoiceField
 
 
-class BaseDictionaryFilterSet(filters.FilterSet):
-    """Filter set for base dictionary models."""
+class BaseLookupFilterSet(filters.FilterSet):
+    """Filter set for base lookup models."""
 
     name = filters.CharFilter(method="filter_name")
 
@@ -58,6 +58,6 @@ class BaseDictionaryFilterSet(filters.FilterSet):
         return queryset.filter(Q(name_en__icontains=value) | Q(name_pl__icontains=value))
 
     class Meta:
-        """Meta class for BaseDictionaryFilterSet."""
+        """Meta class for BaseLookupFilterSet."""
 
         fields: tuple[str, ...] = ("id", "name")

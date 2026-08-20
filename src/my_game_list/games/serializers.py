@@ -24,7 +24,7 @@ from my_game_list.games.models import (
     TranslationSuggestionField,
 )
 from my_game_list.moderation.masking import mask_if_moderated
-from my_game_list.my_game_list.serializers import BaseDictionarySerializer
+from my_game_list.my_game_list.serializers import BaseLookupSerializer
 from my_game_list.users.serializers import UserSerializer, UserSimpleSerializer
 
 if TYPE_CHECKING:
@@ -51,15 +51,15 @@ class CompanyGameSerializer(serializers.ModelSerializer[Game]):
         fields = ("id", "cover_image_id", "title", "slug")
 
 
-class CompanySerializer(BaseDictionarySerializer):
+class CompanySerializer(BaseLookupSerializer):
     """A serializer for the Company model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for Company serializer."""
 
         model = Company
         fields = (
-            *BaseDictionarySerializer.Meta.fields,
+            *BaseLookupSerializer.Meta.fields,
             "company_logo_id",
             "igdb_id",
             "igdb_updated_at",
@@ -258,24 +258,24 @@ class GameReviewCreateSerializer(serializers.ModelSerializer[GameReview]):
         fields = ("id", "created_at", "review", "recommendation", "game", "user")
 
 
-class GenreSerializer(BaseDictionarySerializer):
+class GenreSerializer(BaseLookupSerializer):
     """A serializer for genre model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for a genre serializer."""
 
         model = Genre
-        fields = (*BaseDictionarySerializer.Meta.fields, "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "igdb_id", "igdb_updated_at")
 
 
-class PlatformSerializer(BaseDictionarySerializer):
+class PlatformSerializer(BaseLookupSerializer):
     """A serializer for the platform model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for the platform serializer."""
 
         model = Platform
-        fields = (*BaseDictionarySerializer.Meta.fields, "abbreviation", "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "abbreviation", "igdb_id", "igdb_updated_at")
 
 
 class GameTypeSerializer(serializers.ModelSerializer[GameType]):
@@ -298,44 +298,44 @@ class GameStatusSerializer(serializers.ModelSerializer[GameStatus]):
         fields = ("id", "status", "igdb_id", "igdb_updated_at")
 
 
-class GameEngineSerializer(BaseDictionarySerializer):
+class GameEngineSerializer(BaseLookupSerializer):
     """A serializer for the game engine model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for the game engine serializer."""
 
         model = GameEngine
-        fields = (*BaseDictionarySerializer.Meta.fields, "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "igdb_id", "igdb_updated_at")
 
 
-class GameModeSerializer(BaseDictionarySerializer):
+class GameModeSerializer(BaseLookupSerializer):
     """A serializer for the game mode model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for the game mode serializer."""
 
         model = GameMode
-        fields = (*BaseDictionarySerializer.Meta.fields, "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "igdb_id", "igdb_updated_at")
 
 
-class PlayerPerspectiveSerializer(BaseDictionarySerializer):
+class PlayerPerspectiveSerializer(BaseLookupSerializer):
     """A serializer for the player perspective model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for the player perspective serializer."""
 
         model = PlayerPerspective
-        fields = (*BaseDictionarySerializer.Meta.fields, "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "igdb_id", "igdb_updated_at")
 
 
-class ExternalGameSourceSerializer(BaseDictionarySerializer):
+class ExternalGameSourceSerializer(BaseLookupSerializer):
     """A serializer for the external game source model."""
 
-    class Meta(BaseDictionarySerializer.Meta):
+    class Meta(BaseLookupSerializer.Meta):
         """Meta data for the external game source serializer."""
 
         model = ExternalGameSource
-        fields = (*BaseDictionarySerializer.Meta.fields, "igdb_id", "igdb_updated_at")
+        fields = (*BaseLookupSerializer.Meta.fields, "igdb_id", "igdb_updated_at")
 
 
 class ExternalGameSerializer(serializers.ModelSerializer[ExternalGame]):

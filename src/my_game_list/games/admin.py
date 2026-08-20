@@ -22,15 +22,15 @@ from my_game_list.games.models import (
     PlayerPerspective,
     TranslationSuggestion,
 )
-from my_game_list.my_game_list.admin import BaseDictionaryModelAdmin
+from my_game_list.my_game_list.admin import BaseLookupModelAdmin
 
 
 @admin.register(Company)
-class CompanyAdmin(BaseDictionaryModelAdmin):
+class CompanyAdmin(BaseLookupModelAdmin):
     """Admin model for the company model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "company_logo_tag", "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "company_logo_tag")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "company_logo_tag", "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "company_logo_tag")
 
 
 @admin.register(GameFollow)
@@ -116,63 +116,63 @@ class GameAdmin(TabbedTranslationAdmin[Game]):
 
 
 @admin.register(Genre)
-class GenreAdmin(BaseDictionaryModelAdmin):
+class GenreAdmin(BaseLookupModelAdmin):
     """Admin model for the genre model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "igdb_id")
 
 
 @admin.register(Platform)
-class PlatformAdmin(BaseDictionaryModelAdmin):
+class PlatformAdmin(BaseLookupModelAdmin):
     """Admin model for the platform model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "abbreviation", "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "abbreviation", "igdb_id")
 
 
 @admin.register(GameMedia)
-class GameMediaAdmin(BaseDictionaryModelAdmin):
+class GameMediaAdmin(BaseLookupModelAdmin):
     """Admin model for the game media model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields,)
-    list_display = (*BaseDictionaryModelAdmin.list_display,)
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields,)
+    list_display = (*BaseLookupModelAdmin.list_display,)
 
 
 @admin.register(GameEngine)
-class GameEngineAdmin(BaseDictionaryModelAdmin):
+class GameEngineAdmin(BaseLookupModelAdmin):
     """Admin model for the game engine model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "igdb_id")
 
 
 @admin.register(GameMode)
-class GameModeAdmin(BaseDictionaryModelAdmin):
+class GameModeAdmin(BaseLookupModelAdmin):
     """Admin model for the game mode model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "igdb_id")
 
 
 @admin.register(PlayerPerspective)
-class PlayerPerspectiveAdmin(BaseDictionaryModelAdmin):
+class PlayerPerspectiveAdmin(BaseLookupModelAdmin):
     """Admin model for the player perspective model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "igdb_id")
 
 
 @admin.register(ExternalGameSource)
-class ExternalGameSourceAdmin(BaseDictionaryModelAdmin):
+class ExternalGameSourceAdmin(BaseLookupModelAdmin):
     """Admin model for the external game source model."""
 
-    readonly_fields = (*BaseDictionaryModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
-    list_display = (*BaseDictionaryModelAdmin.list_display, "igdb_id")
+    readonly_fields = (*BaseLookupModelAdmin.readonly_fields, "igdb_id", "igdb_updated_at")
+    list_display = (*BaseLookupModelAdmin.list_display, "igdb_id")
 
 
 @admin.register(GameStatus)
-class GameStatusAdmin(BaseDictionaryModelAdmin):
+class GameStatusAdmin(BaseLookupModelAdmin):
     """Admin model for the game status model."""
 
     readonly_fields: ClassVar[tuple[str, ...]] = ("id", "igdb_id", "igdb_updated_at")
@@ -181,7 +181,7 @@ class GameStatusAdmin(BaseDictionaryModelAdmin):
 
 
 @admin.register(GameType)
-class GameTypeAdmin(BaseDictionaryModelAdmin):
+class GameTypeAdmin(BaseLookupModelAdmin):
     """Admin model for the game type model."""
 
     readonly_fields: ClassVar[tuple[str, ...]] = ("id", "igdb_id", "igdb_updated_at")

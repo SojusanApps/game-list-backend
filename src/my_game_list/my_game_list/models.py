@@ -1,4 +1,4 @@
-"""This module contains the base dictionary model for all dictionary models in the application."""
+"""This module contains the base lookup model for all lookup models in the application."""
 
 from typing import Self
 
@@ -7,8 +7,8 @@ from django.utils.translation import gettext_lazy as _
 from django_stubs_ext.db.models import TypedModelMeta
 
 
-class BaseDictionaryModel(models.Model):
-    """Base class for all dictionary models."""
+class BaseLookupModel(models.Model):
+    """Base class for all lookup models."""
 
     name = models.CharField(
         _("name"),
@@ -18,13 +18,13 @@ class BaseDictionaryModel(models.Model):
     )
 
     class Meta(TypedModelMeta):
-        """Meta data for dictionary models."""
+        """Meta data for lookup models."""
 
         abstract = True
         ordering = ("id",)
 
     def __str__(self: Self) -> str:
-        """String representation of dictionary models."""
+        """String representation of lookup models."""
         return self.name
 
 

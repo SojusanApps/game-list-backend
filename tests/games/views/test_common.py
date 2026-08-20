@@ -835,7 +835,7 @@ def test_create_model(
     game_fixture: Game,
     admin_authenticated_api_client: APIClient,
 ) -> None:
-    """Check if creation of the new dictionary model is working properly."""
+    """Check if creation of the new lookup model is working properly."""
     is_user_dependent = viewname in GAME_USER_DEPENDENT_LIST_VIEWNAMES
     if is_user_dependent:
         initial_data |= {"user": admin_user_fixture.pk, "game": game_fixture.pk}
@@ -987,7 +987,7 @@ def test_delete_model(
     """Check if deletion of the game model works properly.
 
     Owner-scoped resources (game follow/list/review) are deleted by their owner; the
-    admin-only dictionary model (game media) is deleted by an admin, per its own permissions.
+    admin-only lookup model (game media) is deleted by an admin, per its own permissions.
     Only one of the two client fixtures is resolved per case - both share the same underlying
     APIClient instance, and requesting both would leave it authenticated as whichever ran last.
     """

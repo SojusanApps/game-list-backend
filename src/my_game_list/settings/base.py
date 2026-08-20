@@ -203,10 +203,10 @@ SPECTACULAR_SETTINGS = {
                 "Browse and interact with the game catalogue. "
                 "Covers the core Game resource, user game-tracking via GameList (with statuses "
                 "such as Playing, Completed, and Plan to Play), social interactions "
-                "(GameFollow, GameReview, GameMedia), and the read-only Dictionary Models "
+                "(GameFollow, GameReview, GameMedia), and the read-only Lookup Models "
                 "that categorise games: Genre, Platform, Company, GameType, GameStatus, "
                 "GameEngine, GameMode, PlayerPerspective, and ExternalGameSource. "
-                "Dictionary Models are sourced from IGDB or maintained manually and are "
+                "Lookup Models are sourced from IGDB or maintained manually and are "
                 "only writable by administrators."
             ),
         },

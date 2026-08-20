@@ -17,7 +17,7 @@ from django_stubs_ext.db.models import TypedModelMeta
 from my_game_list.games.querysets import GameQuerySet
 from my_game_list.games.utils import normalize_title
 from my_game_list.my_game_list.igdb_integration import IGDBImageSize, get_image_url
-from my_game_list.my_game_list.models import BaseDictionaryModel, BaseModel
+from my_game_list.my_game_list.models import BaseLookupModel, BaseModel
 
 
 class IGDBModel(models.Model):
@@ -40,16 +40,16 @@ class IGDBModel(models.Model):
     )
 
     class Meta(TypedModelMeta):
-        """Meta data for dictionary models."""
+        """Meta data for lookup models."""
 
         abstract = True
 
     def __str__(self: Self) -> str:
-        """String representation of dictionary models."""
+        """String representation of lookup models."""
         return f"{self.igdb_id}"
 
 
-class Company(BaseDictionaryModel, IGDBModel):
+class Company(BaseLookupModel, IGDBModel):
     """Data about company."""
 
     name = models.CharField(_("name"), max_length=255, help_text="The company's name.")
@@ -71,7 +71,7 @@ class Company(BaseDictionaryModel, IGDBModel):
         name_en: str
         name_pl: str
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the company model."""
 
         verbose_name = _("company")
@@ -143,10 +143,10 @@ class GameListStatus(models.TextChoices):
     ON_HOLD = "OH", _("On hold")
 
 
-class GameMedia(BaseDictionaryModel):
+class GameMedia(BaseLookupModel):
     """Data about media on which the game is owned."""
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the game owned on model."""
 
         verbose_name = _("game media")
@@ -292,17 +292,17 @@ class GameReview(BaseModel):
         return f"{self.user.username} - {self.game.title}"
 
 
-class Genre(BaseDictionaryModel, IGDBModel):
+class Genre(BaseLookupModel, IGDBModel):
     """Data about game genres."""
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the genre model."""
 
         verbose_name = _("genre")
         verbose_name_plural = _("genres")
 
 
-class Platform(BaseDictionaryModel, IGDBModel):
+class Platform(BaseLookupModel, IGDBModel):
     """Data about game platforms."""
 
     abbreviation = models.CharField(
@@ -312,7 +312,7 @@ class Platform(BaseDictionaryModel, IGDBModel):
         help_text="A short abbreviation for the platform name (e.g. PS5, PC).",
     )
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the platform model."""
 
         verbose_name = _("platform")
@@ -331,27 +331,27 @@ class GameEngine(IGDBModel):
 
     name = models.CharField(_("name"), max_length=255, help_text="The game engine's name.")
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the game engine model."""
 
         verbose_name = _("game engine")
         verbose_name_plural = _("game engines")
 
 
-class GameMode(BaseDictionaryModel, IGDBModel):
+class GameMode(BaseLookupModel, IGDBModel):
     """Data about game modes."""
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the game mode model."""
 
         verbose_name = _("game mode")
         verbose_name_plural = _("game modes")
 
 
-class PlayerPerspective(BaseDictionaryModel, IGDBModel):
+class PlayerPerspective(BaseLookupModel, IGDBModel):
     """Data about player perspectives."""
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the player perspective model."""
 
         verbose_name = _("player perspective")
@@ -461,10 +461,10 @@ class GameStatus(BaseModel, IGDBModel):
         return self.status
 
 
-class ExternalGameSource(BaseDictionaryModel, IGDBModel):
+class ExternalGameSource(BaseLookupModel, IGDBModel):
     """Data about external game sources."""
 
-    class Meta(BaseDictionaryModel.Meta):
+    class Meta(BaseLookupModel.Meta):
         """Meta data for the external game source model."""
 
         verbose_name = _("external game source")

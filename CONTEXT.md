@@ -4,13 +4,13 @@ A backend service for tracking, rating, and reviewing video games. Users maintai
 
 ## Language
 
-**Dictionary Model**:
+**Lookup Model**:
 A named reference/lookup entity whose primary value is its human-readable name, populated from IGDB or manually. Includes `Genre`, `Platform`, `GameMedia`, `GameMode`, `PlayerPerspective`, `ExternalGameSource`, `Company`, `GameEngine`, `GameType`, and `GameStatus`.
-_Avoid_: lookup table, reference data, master data
+_Avoid_: dictionary model, lookup table, reference data, master data
 
 ## Relationships
 
-- A **Dictionary Model** has a canonical English name; Polish translations are optional and fall back to English when absent.
+- A **Lookup Model** has a canonical English name; Polish translations are optional and fall back to English when absent.
 - A **Game** has a language-neutral `slug` always derived from its English `title`.
 - A **Game** has many **Translation Suggestions**, targeting its `title_pl` or `summary_pl` fields.
 - A **Report** targets exactly one of: a User's avatar, a User's username, a `GameReview`, a `TranslationSuggestion`, a `GameList`'s note, or a `Collection` (name and/or description) or `CollectionItem`'s note.
@@ -80,7 +80,7 @@ The backend's own account record. Resolved _from_ an Identity via the Keycloak a
 
 ## Flagged ambiguities
 
-- "dictionary model" applies to `GameType` and `GameStatus` even though their primary fields are named `type` and `status` rather than `name`.
+- "lookup model" applies to `GameType` and `GameStatus` even though their primary fields are named `type` and `status` rather than `name`.
 - "description" is ambiguous in casual conversation: `Game.summary` (canonical synopsis) vs. `GameList.description` (per-user personal notes). Translation Suggestions only ever target `Game.summary`.
 - "description" is further overloaded by `Collection.description` and `CollectionItem.description` — a third and fourth distinct field, both reportable/moderatable, neither related to `Game.summary` or `GameList.description`.
 - A `Report` targeting a `Collection` covers both `name` and `description` as one unit (one `is_moderated` flag) — the reporter's free-text reason is what tells the admin which field was actually the problem, the system doesn't track that distinction structurally.

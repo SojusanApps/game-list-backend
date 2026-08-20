@@ -106,7 +106,7 @@ MAX_MATCHES_PER_IMPORTED_TITLE = 3
     list=extend_schema(
         description=(
             "List all companies in the catalogue. "
-            "Companies are read-only Dictionary Model entries that represent both publishers "
+            "Companies are read-only Lookup Model entries that represent both publishers "
             "and developers. Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1165,7 +1165,7 @@ class GameViewSet(ReadOnlyModelViewSet[Game]):
     list=extend_schema(
         description=(
             "List all game genres. "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1203,7 +1203,7 @@ class GenreViewSet(ReadOnlyModelViewSet[Genre]):
     list=extend_schema(
         description=(
             "List all gaming platforms. "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1241,7 +1241,7 @@ class PlatformViewSet(ReadOnlyModelViewSet[Platform]):
     list=extend_schema(
         description=(
             "List all game types (e.g. main game, DLC, expansion). "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by type label (bilingual EN/PL) or IGDB ID."
         ),
         parameters=[
@@ -1279,7 +1279,7 @@ class GameTypeViewSet(ReadOnlyModelViewSet[GameType]):
     list=extend_schema(
         description=(
             "List all game development statuses (e.g. Released, In Development, Cancelled). "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by status label (bilingual EN/PL) or IGDB ID."
         ),
         parameters=[
@@ -1317,7 +1317,7 @@ class GameStatusViewSet(ReadOnlyModelViewSet[GameStatus]):
     list=extend_schema(
         description=(
             "List all game engines (e.g. Unreal Engine, Unity). "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1355,7 +1355,7 @@ class GameEngineViewSet(ReadOnlyModelViewSet[GameEngine]):
     list=extend_schema(
         description=(
             "List all game modes (e.g. Single player, Multiplayer, Co-operative). "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1393,7 +1393,7 @@ class GameModeViewSet(ReadOnlyModelViewSet[GameMode]):
     list=extend_schema(
         description=(
             "List all player perspectives (e.g. First person, Third person, Side view). "
-            "This is a read-only Dictionary Model sourced from IGDB. "
+            "This is a read-only Lookup Model sourced from IGDB. "
             "Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1431,7 +1431,7 @@ class PlayerPerspectiveViewSet(ReadOnlyModelViewSet[PlayerPerspective]):
     list=extend_schema(
         description=(
             "List all external game sources (e.g. Steam, GOG, Epic Games Store). "
-            "This is a read-only Dictionary Model used to link games to their entries on "
+            "This is a read-only Lookup Model used to link games to their entries on "
             "external platforms. Filter by name (bilingual EN/PL partial match) or IGDB ID."
         ),
         parameters=[
@@ -1469,7 +1469,7 @@ class ExternalGameSourceViewSet(ReadOnlyModelViewSet[ExternalGameSource]):
     list=extend_schema(
         description=(
             "List all game media asset types. "
-            "This is a Dictionary Model that categorises game media by type (e.g. banner, cover). "
+            "This is a Lookup Model that categorises game media by type (e.g. banner, cover). "
             "Filter by name (bilingual EN/PL partial match)."
         ),
         parameters=[

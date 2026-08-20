@@ -18,7 +18,7 @@ from my_game_list.games.models import (
 
 
 class NameTranslationOptions(TranslationOptions):
-    """Shared translation options for dictionary models with a name field."""
+    """Shared translation options for lookup models with a name field."""
 
     fields = ("name",)
 

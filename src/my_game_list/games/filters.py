@@ -25,17 +25,17 @@ from my_game_list.games.models import (
     TranslationSuggestion,
 )
 from my_game_list.games.search import filter_queryset_by_title
-from my_game_list.my_game_list.filters import BaseDictionaryFilterSet, BilingualModelMultipleChoiceFilter
+from my_game_list.my_game_list.filters import BaseLookupFilterSet, BilingualModelMultipleChoiceFilter
 
 
-class CompanyFilterSet(BaseDictionaryFilterSet):
+class CompanyFilterSet(BaseLookupFilterSet):
     """Filter set for company model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for CompanyFilterSet."""
 
         model = Company
-        fields: tuple[str, ...] = (*BaseDictionaryFilterSet.Meta.fields, "igdb_id")
+        fields: tuple[str, ...] = (*BaseLookupFilterSet.Meta.fields, "igdb_id")
 
 
 class GameFollowFilterSet(filters.FilterSet):
@@ -248,19 +248,19 @@ class GameFilterSet(filters.FilterSet):
         )
 
 
-class GenreFilterSet(BaseDictionaryFilterSet):
+class GenreFilterSet(BaseLookupFilterSet):
     """Filter set for genre model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for GenreFilterSet."""
 
         model = Genre
 
 
-class PlatformFilterSet(BaseDictionaryFilterSet):
+class PlatformFilterSet(BaseLookupFilterSet):
     """Filter set for platform model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for PlatformFilterSet."""
 
         model = Platform
@@ -298,50 +298,50 @@ class GameStatusFilterSet(filters.FilterSet):
         fields = ("id", "status", "igdb_id")
 
 
-class GameEngineFilterSet(BaseDictionaryFilterSet):
+class GameEngineFilterSet(BaseLookupFilterSet):
     """Filter set for game engine model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for GameEngineFilterSet."""
 
         model = GameEngine
-        fields = (*BaseDictionaryFilterSet.Meta.fields, "igdb_id")
+        fields = (*BaseLookupFilterSet.Meta.fields, "igdb_id")
 
 
-class GameModeFilterSet(BaseDictionaryFilterSet):
+class GameModeFilterSet(BaseLookupFilterSet):
     """Filter set for game mode model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for GameModeFilterSet."""
 
         model = GameMode
-        fields = (*BaseDictionaryFilterSet.Meta.fields, "igdb_id")
+        fields = (*BaseLookupFilterSet.Meta.fields, "igdb_id")
 
 
-class PlayerPerspectiveFilterSet(BaseDictionaryFilterSet):
+class PlayerPerspectiveFilterSet(BaseLookupFilterSet):
     """Filter set for player perspective model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for PlayerPerspectiveFilterSet."""
 
         model = PlayerPerspective
-        fields = (*BaseDictionaryFilterSet.Meta.fields, "igdb_id")
+        fields = (*BaseLookupFilterSet.Meta.fields, "igdb_id")
 
 
-class ExternalGameSourceFilterSet(BaseDictionaryFilterSet):
+class ExternalGameSourceFilterSet(BaseLookupFilterSet):
     """Filter set for external game source model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for ExternalGameSourceFilterSet."""
 
         model = ExternalGameSource
-        fields = (*BaseDictionaryFilterSet.Meta.fields, "igdb_id")
+        fields = (*BaseLookupFilterSet.Meta.fields, "igdb_id")
 
 
-class GameMediaFilterSet(BaseDictionaryFilterSet):
+class GameMediaFilterSet(BaseLookupFilterSet):
     """Filter set for game media model."""
 
-    class Meta(BaseDictionaryFilterSet.Meta):
+    class Meta(BaseLookupFilterSet.Meta):
         """Meta class for GameMediaFilterSet."""
 
         model = GameMedia
