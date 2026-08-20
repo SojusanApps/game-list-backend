@@ -39,12 +39,13 @@ def test_create_model(
 
 
 @pytest.mark.django_db()
-def test_custom_action_accept(admin_authenticated_api_client: APIClient) -> None:
+def test_custom_action_accept(api_client: APIClient) -> None:
     """Check that after accepting a friendship request the friendship will be created."""
     sender_user = baker.make(User)
     receiver_user = baker.make(User)
     friendship_request = baker.make(FriendshipRequest, sender=sender_user, receiver=receiver_user)
-    response = admin_authenticated_api_client.post(
+    api_client.force_authenticate(receiver_user)
+    response = api_client.post(
         reverse("friendships:friendship-requests-accept", (friendship_request.pk,)),
     )
 
@@ -61,12 +62,13 @@ def test_custom_action_accept(admin_authenticated_api_client: APIClient) -> None
 
 @freeze_time("2023-06-23 18:21:41")
 @pytest.mark.django_db()
-def test_custom_action_reject(admin_authenticated_api_client: APIClient) -> None:
+def test_custom_action_reject(api_client: APIClient) -> None:
     """Check the friendship request reject."""
     sender_user = baker.make(User)
     receiver_user = baker.make(User)
     friendship_request = baker.make(FriendshipRequest, sender=sender_user, receiver=receiver_user)
-    response = admin_authenticated_api_client.post(
+    api_client.force_authenticate(receiver_user)
+    response = api_client.post(
         reverse("friendships:friendship-requests-reject", (friendship_request.pk,)),
     )
 

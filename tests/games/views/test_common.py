@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import ANY
 
 import pytest
-from django.contrib.auth import get_user_model
 from freezegun import freeze_time
 from model_bakery import baker
 from rest_framework import status
@@ -12,6 +11,7 @@ from rest_framework.reverse import reverse
 
 from my_game_list.games.models import (
     Game,
+    GameFollow,
     GameListStatus,
     GameReviewRecommendation,
 )
@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 
     from my_game_list.users.models import User as UserModel
 
-User: type[UserModel] = get_user_model()
 FORBIDDEN_DETAIL = "You do not have permission to perform this action."
 GAME_USER_DEPENDENT_LIST_VIEWNAMES = [
     "games:game-reviews-list",
@@ -33,7 +32,6 @@ GAME_USER_DEPENDENT_LIST_VIEWNAMES = [
 GAME_USER_DEPENDENT_DETAIL_VIEWNAMES = [
     "games:game-reviews-detail",
     "games:game-lists-detail",
-    "games:game-follows-detail",
 ]
 
 
@@ -838,12 +836,18 @@ def test_create_model(
     admin_authenticated_api_client: APIClient,
 ) -> None:
     """Check if creation of the new dictionary model is working properly."""
-    if viewname in GAME_USER_DEPENDENT_LIST_VIEWNAMES:
+    is_user_dependent = viewname in GAME_USER_DEPENDENT_LIST_VIEWNAMES
+    if is_user_dependent:
         initial_data |= {"user": admin_user_fixture.pk, "game": game_fixture.pk}
     response = admin_authenticated_api_client.post(reverse(viewname), initial_data)
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json() == initial_data | expected_result
+    expected_data = initial_data | expected_result
+    if is_user_dependent:
+        # "user" is a hidden field on every create serializer - excluded from the create
+        # response entirely, even though it's a plain readable field on the read serializer.
+        del expected_data["user"]
+    assert response.json() == expected_data
 
 
 @freeze_time("2023-06-22 22:20:01")
@@ -863,15 +867,6 @@ def test_create_model(
 @pytest.mark.parametrize(
     ("viewname", "fixture_name", "update_data", "expected_result"),
     [
-        pytest.param(
-            "games:game-follows-detail",
-            "game_follow_fixture",
-            {},
-            {
-                "created_at": "2023-06-22T16:47:12Z",
-            },
-            id="Update a game follow.",
-        ),
         pytest.param(
             "games:game-lists-detail",
             "game_list_fixture",
@@ -914,16 +909,16 @@ def test_update_model(
     fixture_name: str,
     update_data: dict[str, Any],
     expected_result: dict[str, Any],
-    admin_authenticated_api_client: APIClient,
+    authenticated_api_client: APIClient,
 ) -> None:
-    """Check if updates method works properly for game models."""
-    if viewname in GAME_USER_DEPENDENT_DETAIL_VIEWNAMES:
-        update_data |= {
-            "user": baker.make(User).pk,
-            "game": baker.make(Game).pk,
-        }
+    """Check if updates method works properly for game models, when performed by their owner."""
     model_instance = request.getfixturevalue(fixture_name)
-    response = getattr(admin_authenticated_api_client, method)(
+    if viewname in GAME_USER_DEPENDENT_DETAIL_VIEWNAMES:
+        # "user" is a hidden field (owner is fixed at creation, never reassignable, and excluded
+        # from the response) - only "game" is still writable, and needs a value here so PUT's
+        # full-payload validation is satisfied.
+        update_data |= {"game": baker.make(Game).pk}
+    response = getattr(authenticated_api_client, method)(
         reverse(viewname, (model_instance.pk,)),
         update_data,
     )
@@ -932,31 +927,51 @@ def test_update_model(
     assert response.json() == update_data | expected_result | {"id": model_instance.pk}
 
 
+@pytest.mark.parametrize("method", ["put", "patch"])
+@pytest.mark.django_db()
+def test_game_follow_update_not_allowed(
+    method: str,
+    game_follow_fixture: GameFollow,
+    authenticated_api_client: APIClient,
+) -> None:
+    """A GameFollow has no mutable attribute once created, so update is not exposed at all."""
+    response = getattr(authenticated_api_client, method)(
+        reverse("games:game-follows-detail", (game_follow_fixture.pk,)),
+        {},
+    )
+
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+
 @pytest.mark.parametrize(
-    ("viewname", "fixture_name", "total_count_after_deletion"),
+    ("viewname", "fixture_name", "total_count_after_deletion", "client_fixture_name"),
     [
         pytest.param(
             "games:game-follows-detail",
             "game_follow_fixture",
             0,
+            "authenticated_api_client",
             id="Delete the game follow.",
         ),
         pytest.param(
             "games:game-lists-detail",
             "game_list_fixture",
             0,
+            "authenticated_api_client",
             id="Delete the game list.",
         ),
         pytest.param(
             "games:game-reviews-detail",
             "game_review_fixture",
             0,
+            "authenticated_api_client",
             id="Delete the game review.",
         ),
         pytest.param(
             "games:game-medias-detail",
             "game_media_fixture",
             5,
+            "admin_authenticated_api_client",
             id="Delete the game media.",
         ),
     ],
@@ -967,11 +982,18 @@ def test_delete_model(
     viewname: str,
     fixture_name: str,
     total_count_after_deletion: int,
-    admin_authenticated_api_client: APIClient,
+    client_fixture_name: str,
 ) -> None:
-    """Check if deletion of the game model works properly."""
+    """Check if deletion of the game model works properly.
+
+    Owner-scoped resources (game follow/list/review) are deleted by their owner; the
+    admin-only dictionary model (game media) is deleted by an admin, per its own permissions.
+    Only one of the two client fixtures is resolved per case - both share the same underlying
+    APIClient instance, and requesting both would leave it authenticated as whichever ran last.
+    """
     model_instance = request.getfixturevalue(fixture_name)
-    response = admin_authenticated_api_client.delete(reverse(viewname, (model_instance.pk,)))
+    client: APIClient = request.getfixturevalue(client_fixture_name)
+    response = client.delete(reverse(viewname, (model_instance.pk,)))
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert model_instance.__class__.objects.count() == total_count_after_deletion

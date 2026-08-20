@@ -67,6 +67,10 @@ _Avoid_: deleted, removed, hidden (as a synonym for the flag itself — "hidden"
 A mandatory field on every `GameReview`: one of `Recommended`, `Not Recommended`, or `Undecided`, always chosen explicitly by the reviewer. `Undecided` is a genuine opinion ("I've played it and I'm on the fence"), not a placeholder for "not yet answered." Independent of `GameList.score` — a reviewer's numeric score and their Recommendation are never derived from one another, so a low score with a `Recommended` review (or the reverse) is valid. Required on every create/update; omitting it is rejected rather than silently defaulted. Unlike `review` text, it is never subject to **Moderated content** or **Banned**-author masking — it's a closed set of values with nothing to censor.
 _Avoid_: rating, score, verdict (those specifically mean `GameList.score`, the reviewer's separate 1-10 number)
 
+**Owner**:
+The User whose write access to a resource is unconditional through the API: `GameList.user`, `GameReview.user`, `GameFollow.user`, `Collection.user`, and — since a `Friendship` row's delete already cascades to remove both reciprocal rows — either side (`user` or `friend`) of a `Friendship`. Distinct from `TranslationSuggestion.submitted_by`: a suggestion's submitter does not gain any control over the `Game` it targets, so that field keeps its own term and permission (`IsSuggestionSubmitter`) rather than being called "owner." `is_staff` is **not** part of ownership and carries no special standing in any owner-only permission check — an admin's only way to override another user's owned resource is directly in the Django admin panel, never through this API. See [ADR-0016](docs/adr/0016-owner-only-modification-no-api-admin-bypass.md).
+_Avoid_: creator (implies only attribution, not control — use for `submitted_by`-style fields instead), author
+
 **Identity**:
 The authenticated principal as Keycloak knows it — the token's `sub` claim plus whatever other claims it carries (`nickname`, `email`, `email_verified`). Not the same thing as a `User`.
 _Avoid_: token, claims (as a synonym for the concept itself — those are how an Identity is carried, not the Identity)

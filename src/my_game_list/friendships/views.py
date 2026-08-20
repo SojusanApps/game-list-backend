@@ -3,6 +3,7 @@
 from typing import TYPE_CHECKING, Self
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q, QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import serializers, status
 from rest_framework.decorators import action
@@ -12,7 +13,7 @@ from rest_framework.mixins import (
     ListModelMixin,
     RetrieveModelMixin,
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -21,6 +22,7 @@ from my_game_list.friendships.filters import (
     FriendshipRequestFilterSet,
 )
 from my_game_list.friendships.models import Friendship, FriendshipRequest
+from my_game_list.friendships.permissions import IsFriendshipRequestReceiver, IsFriendshipRequestSender
 from my_game_list.friendships.serializers import (
     FriendshipRequestCreateSerializer,
     FriendshipRequestSerializer,
@@ -59,9 +61,8 @@ User = get_user_model()
     ),
     destroy=extend_schema(
         description=(
-            "Remove a friendship. This action is unilateral: only the authenticated user's "
-            "friendship record is deleted. The other party retains their record until they "
-            "also remove the friendship."
+            "End a friendship. Either party may delete it; deleting either party's record "
+            "removes both reciprocal records, ending the friendship for both users."
         ),
     ),
 )
@@ -72,6 +73,14 @@ class FriendshipViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, G
     permission_classes = (IsAuthenticated,)
     serializer_class = FriendshipSerializer
     filterset_class = FriendshipFilterSet
+
+    def get_queryset(self: Self) -> QuerySet[Friendship]:
+        """Restrict list/retrieve/destroy to friendships the requesting user is a party to."""
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_authenticated:
+            return queryset.none()
+        return queryset.filter(Q(user=user) | Q(friend=user))
 
 
 @extend_schema_view(
@@ -119,6 +128,20 @@ class FriendshipRequestViewSet(
     permission_classes = (IsAuthenticated,)
     filterset_class = FriendshipRequestFilterSet
 
+    def get_queryset(self: Self) -> QuerySet[FriendshipRequest]:
+        """Restrict list/retrieve to friendship requests the requesting user sent or received."""
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_authenticated:
+            return queryset.none()
+        return queryset.filter(Q(sender=user) | Q(receiver=user))
+
+    def get_permissions(self: Self) -> list[BasePermission]:
+        """Only the sender may withdraw (destroy) their own pending request."""
+        if self.action == "destroy":
+            return [IsAuthenticated(), IsFriendshipRequestSender()]
+        return super().get_permissions()  # type: ignore[return-value]
+
     def get_serializer_class(
         self: Self,
     ) -> type[FriendshipRequestCreateSerializer | FriendshipRequestSerializer]:
@@ -147,7 +170,7 @@ class FriendshipRequestViewSet(
         request=None,
         responses={204: None},
     )
-    @action(detail=True, methods=("post",))
+    @action(detail=True, methods=("post",), permission_classes=[IsAuthenticated, IsFriendshipRequestReceiver])
     def accept(self: Self, request: Request, pk: int) -> Response:  # noqa: ARG002
         """Accept a friendship request."""
         user = request.user
@@ -169,12 +192,12 @@ class FriendshipRequestViewSet(
     @extend_schema(
         description=(
             "Reject a pending friendship request. "
-            "The request record is deleted. No notification is sent to the requester."
+            "The request record is kept with `rejected_at` set. No notification is sent to the requester."
         ),
         request=None,
         responses={204: None},
     )
-    @action(detail=True, methods=("post",))
+    @action(detail=True, methods=("post",), permission_classes=[IsAuthenticated, IsFriendshipRequestReceiver])
     def reject(self: Self, request: Request, pk: int) -> Response:  # noqa: ARG002
         """Reject a friendship request."""
         instance: FriendshipRequest = self.get_object()

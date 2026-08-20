@@ -1,6 +1,6 @@
 """This module contains the serializers for the game related data."""
 
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from rest_framework import serializers
 
@@ -25,8 +25,10 @@ from my_game_list.games.models import (
 )
 from my_game_list.moderation.masking import mask_if_moderated
 from my_game_list.my_game_list.serializers import BaseDictionarySerializer
-from my_game_list.users.models import User
 from my_game_list.users.serializers import UserSerializer, UserSimpleSerializer
+
+if TYPE_CHECKING:
+    from my_game_list.users.models import User
 
 
 class CompanySimpleNameSerializer(serializers.ModelSerializer[Company]):
@@ -83,10 +85,22 @@ class CompanyDetailSerializer(CompanySerializer):
 
 
 class GameFollowSerializer(serializers.ModelSerializer[GameFollow]):
-    """A serializer for the game follow model."""
+    """A serializer for reading the game follow model (list/retrieve)."""
 
     class Meta:
         """Meta data for game follow serializer."""
+
+        model = GameFollow
+        fields = ("id", "created_at", "game", "user")
+
+
+class GameFollowCreateSerializer(serializers.ModelSerializer[GameFollow]):
+    """A serializer for creating the game follow model."""
+
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    class Meta:
+        """Meta data for the game follow create serializer."""
 
         model = GameFollow
         fields = ("id", "created_at", "game", "user")
@@ -156,6 +170,7 @@ class GameListCreateSerializer(serializers.ModelSerializer[GameList]):
         slug_field="id",
         many=True,
     )
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         """Meta data for the game list create serializer."""
@@ -234,10 +249,7 @@ class GameReviewSerializer(serializers.ModelSerializer[GameReview]):
 class GameReviewCreateSerializer(serializers.ModelSerializer[GameReview]):
     """A serializer for creating the game review model."""
 
-    user = serializers.SlugRelatedField(
-        queryset=User.objects.all(),
-        slug_field="id",
-    )
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         """Meta data for the game review create serializer."""

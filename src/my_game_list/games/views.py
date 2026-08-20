@@ -13,7 +13,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -62,6 +62,7 @@ from my_game_list.games.serializers import (
     CompanySerializer,
     ExternalGameSourceSerializer,
     GameEngineSerializer,
+    GameFollowCreateSerializer,
     GameFollowSerializer,
     GameListCompareResponseSerializer,
     GameListCreateSerializer,
@@ -84,7 +85,7 @@ from my_game_list.games.serializers import (
     TranslationSuggestionCreateSerializer,
     TranslationSuggestionSerializer,
 )
-from my_game_list.my_game_list.permissions import IsAdminOrReadOnly
+from my_game_list.my_game_list.permissions import IsAdminOrReadOnly, IsOwner
 from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
 from my_game_list.notifications.utils import notify_send
 from my_game_list.users.models import User
@@ -183,23 +184,38 @@ class CompanyViewSet(ReadOnlyModelViewSet[Company]):
     retrieve=extend_schema(
         description="Retrieve a single game-follow record by ID.",
     ),
-    update=extend_schema(
-        description="Replace all fields of a game-follow record.",
-    ),
-    partial_update=extend_schema(
-        description="Update one or more fields of a game-follow record.",
-    ),
     destroy=extend_schema(
         description="Unfollow a game. Removes the follow record permanently.",
     ),
 )
-class GameFollowViewSet(ModelViewSet[GameFollow]):
-    """A ViewSet for the GameFollow model."""
+class GameFollowViewSet(
+    CreateModelMixin,
+    RetrieveModelMixin,
+    ListModelMixin,
+    DestroyModelMixin,
+    GenericViewSet[GameFollow],
+):
+    """A ViewSet for the GameFollow model.
+
+    No update/partial_update: a follow has no mutable attribute once created, so the only
+    meaningful operations are follow (create) and unfollow (destroy).
+    """
 
     queryset = GameFollow.objects.all()
-    serializer_class = GameFollowSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsOwner)
     filterset_class = GameFollowFilterSet
+
+    def get_serializer_class(self: Self) -> type[GameFollowCreateSerializer | GameFollowSerializer]:
+        """Get the serializer class for the GameFollow model."""
+        return GameFollowCreateSerializer if self.action == "create" else GameFollowSerializer
+
+    def get_queryset(self: Self) -> QuerySet[GameFollow]:
+        """Restrict list/retrieve to the requesting user's own follows."""
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_authenticated:
+            return queryset.none()
+        return queryset.filter(user=user)
 
 
 @extend_schema_view(
@@ -310,7 +326,7 @@ class GameListViewSet(ModelViewSet[GameList]):
 
     queryset = GameList.objects.all()
     serializer_class = GameListSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsOwner)
     filterset_class = GameListFilterSet
 
     def get_serializer_class(
@@ -546,8 +562,8 @@ class GameListViewSet(ModelViewSet[GameList]):
 
         serializers_list = []
         for item in items:
-            data = {**item, "user": request.user.pk, "owned_on": item.get("owned_on", [])}
-            serializer = GameListCreateSerializer(data=data)
+            data = {**item, "owned_on": item.get("owned_on", [])}
+            serializer = GameListCreateSerializer(data=data, context=self.get_serializer_context())
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializers_list.append(serializer)
@@ -731,7 +747,7 @@ class GameReviewViewSet(ModelViewSet[GameReview]):
     """A ViewSet for the GameReview model."""
 
     queryset = GameReview.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsOwner)
     filterset_class = GameReviewFilterSet
     pagination_class = GameReviewPagination
 
