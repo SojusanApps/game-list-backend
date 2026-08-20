@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 09:29+0000\n"
+"POT-Creation-Date: 2026-08-20 17:29+0000\n"
 "PO-Revision-Date: 2022-08-11 18:47+0000\n"
 "Last-Translator:   <>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,45 +85,49 @@ msgstr "Tier D"
 msgid "E Tier"
 msgstr "Tier E"
 
-#: src/my_game_list/collections/models.py:55
+#: src/my_game_list/collections/models.py:45
+msgid "F Tier"
+msgstr "Tier F"
+
+#: src/my_game_list/collections/models.py:56
 #: src/my_game_list/games/models.py:55 src/my_game_list/games/models.py:332
 #: src/my_game_list/my_game_list/models.py:14
 msgid "name"
 msgstr "nazwa"
 
-#: src/my_game_list/collections/models.py:57
-#: src/my_game_list/collections/models.py:163
+#: src/my_game_list/collections/models.py:58
+#: src/my_game_list/collections/models.py:164
 #: src/my_game_list/games/models.py:173
 #: src/my_game_list/notifications/models.py:51
 msgid "description"
 msgstr "opis"
 
-#: src/my_game_list/collections/models.py:63
+#: src/my_game_list/collections/models.py:64
 msgid "is favorite"
 msgstr "jest ulubioną"
 
-#: src/my_game_list/collections/models.py:68
-#: src/my_game_list/collections/models.py:169
+#: src/my_game_list/collections/models.py:69
+#: src/my_game_list/collections/models.py:170
 #: src/my_game_list/games/models.py:179 src/my_game_list/games/models.py:263
 #: src/my_game_list/games/models.py:553
 msgid "is moderated"
 msgstr "zmoderowana"
 
-#: src/my_game_list/collections/models.py:73
+#: src/my_game_list/collections/models.py:74
 msgid "visibility"
 msgstr "widoczność"
 
-#: src/my_game_list/collections/models.py:80
+#: src/my_game_list/collections/models.py:81
 msgid "mode"
 msgstr "tryb"
 
-#: src/my_game_list/collections/models.py:87
+#: src/my_game_list/collections/models.py:88
 #: src/my_game_list/games/models.py:426
 msgid "type"
 msgstr "typ"
 
-#: src/my_game_list/collections/models.py:93
-#: src/my_game_list/collections/models.py:173
+#: src/my_game_list/collections/models.py:94
+#: src/my_game_list/collections/models.py:174
 #: src/my_game_list/friendships/models.py:22
 #: src/my_game_list/friendships/models.py:84
 #: src/my_game_list/games/models.py:107 src/my_game_list/games/models.py:201
@@ -131,60 +135,78 @@ msgstr "typ"
 msgid "creation time"
 msgstr "czas stworzenia"
 
-#: src/my_game_list/collections/models.py:94
-#: src/my_game_list/collections/models.py:174
+#: src/my_game_list/collections/models.py:95
+#: src/my_game_list/collections/models.py:175
 #: src/my_game_list/friendships/models.py:85
 #: src/my_game_list/games/models.py:202 src/my_game_list/games/models.py:609
 msgid "last modified"
 msgstr "ostatnio zmodyfikowano"
 
-#: src/my_game_list/collections/models.py:96
+#: src/my_game_list/collections/models.py:97
 #: src/my_game_list/games/models.py:63 src/my_game_list/games/models.py:629
-#: src/my_game_list/users/models.py:32
+#: src/my_game_list/users/models.py:36
 msgid "slug"
 msgstr "slug"
 
-#: src/my_game_list/collections/models.py:107
+#: src/my_game_list/collections/models.py:108
 msgid "owner"
 msgstr "właściciel"
 
-#: src/my_game_list/collections/models.py:114
+#: src/my_game_list/collections/models.py:115
 msgid "collaborators"
 msgstr "współtwórcy"
 
-#: src/my_game_list/collections/models.py:121
-#: src/my_game_list/collections/models.py:180
+#: src/my_game_list/collections/models.py:122
+#: src/my_game_list/collections/models.py:181
 msgid "collection"
 msgstr "kolekcja"
 
-#: src/my_game_list/collections/models.py:122
+#: src/my_game_list/collections/models.py:123
 msgid "collections"
 msgstr "kolekcje"
 
-#: src/my_game_list/collections/models.py:147
+#: src/my_game_list/collections/models.py:148
 msgid "order"
 msgstr "kolejność"
 
-#: src/my_game_list/collections/models.py:155
+#: src/my_game_list/collections/models.py:156
 msgid "tier"
 msgstr "tier"
 
-#: src/my_game_list/collections/models.py:187
+#: src/my_game_list/collections/models.py:188
 #: src/my_game_list/games/models.py:788
 msgid "game"
 msgstr "gra"
 
-#: src/my_game_list/collections/models.py:195
+#: src/my_game_list/collections/models.py:196
 msgid "added by"
 msgstr "dodane przez"
 
-#: src/my_game_list/collections/models.py:202
+#: src/my_game_list/collections/models.py:203
 msgid "collection item"
 msgstr "element kolekcji"
 
-#: src/my_game_list/collections/models.py:203
+#: src/my_game_list/collections/models.py:204
 msgid "collection items"
 msgstr "elementy kolekcji"
+
+#: src/my_game_list/collections/serializers.py:269
+msgid "Duplicate item IDs are not allowed."
+msgstr "Duplikaty identyfikatorów elementów są niedozwolone."
+
+#: src/my_game_list/collections/serializers.py:273
+msgid "Duplicate positions are not allowed."
+msgstr "Duplikaty pozycji są niedozwolone."
+
+#: src/my_game_list/collections/views.py:632
+msgid "Only the owner can add items to non-collaborative collections."
+msgstr ""
+"Tylko właściciel może dodawać elementy do kolekcji, które nie są "
+"współdzielone."
+
+#: src/my_game_list/collections/views.py:635
+msgid "You must be a collaborator to add items to this collection."
+msgstr "Musisz być współtwórcą, aby dodawać elementy do tej kolekcji."
 
 #: src/my_game_list/friendships/models.py:42
 msgid "friendship"
@@ -296,7 +318,7 @@ msgstr "ocena"
 
 #: src/my_game_list/games/models.py:167 src/my_game_list/games/models.py:447
 #: src/my_game_list/games/models.py:558
-#: src/my_game_list/moderation/models.py:134
+#: src/my_game_list/moderation/models.py:158
 msgid "status"
 msgstr "status"
 
@@ -500,17 +522,17 @@ msgid "proposed value"
 msgstr "proponowana wartość"
 
 #: src/my_game_list/games/models.py:564
-#: src/my_game_list/moderation/models.py:140
+#: src/my_game_list/moderation/models.py:164
 msgid "submitted at"
 msgstr "zgłoszono"
 
 #: src/my_game_list/games/models.py:574
-#: src/my_game_list/moderation/models.py:150
+#: src/my_game_list/moderation/models.py:174
 msgid "reviewed at"
 msgstr "rozpatrzono"
 
 #: src/my_game_list/games/models.py:580
-#: src/my_game_list/moderation/models.py:156
+#: src/my_game_list/moderation/models.py:180
 msgid "rejection reason"
 msgstr "powód odrzucenia"
 
@@ -545,6 +567,27 @@ msgstr "tytuł wyszukiwania"
 #: src/my_game_list/games/models.py:789
 msgid "games"
 msgstr "gry"
+
+#: src/my_game_list/games/serializers.py:608
+#, python-format
+msgid "Ensure this field has no more than %(max_length)s characters."
+msgstr "To pole nie może zawierać więcej niż %(max_length)s znaków."
+
+#: src/my_game_list/games/serializers.py:620
+msgid "You already have a pending suggestion for this game and field."
+msgstr "Masz już oczekującą sugestię dla tej gry i tego pola."
+
+#: src/my_game_list/games/views.py:859
+msgid "Only a pending suggestion can be withdrawn."
+msgstr "Tylko oczekująca sugestia może zostać wycofana."
+
+#: src/my_game_list/games/views.py:878
+msgid "Only a pending suggestion can be accepted."
+msgstr "Tylko oczekująca sugestia może zostać zaakceptowana."
+
+#: src/my_game_list/games/views.py:925
+msgid "Only a pending suggestion can be rejected."
+msgstr "Tylko oczekująca sugestia może zostać odrzucona."
 
 #: src/my_game_list/moderation/masking.py:15
 msgid "This content has been removed for violating our community guidelines."
@@ -583,39 +626,97 @@ msgstr "Kolekcja"
 msgid "Collection Item Note"
 msgstr "Notatka elementu kolekcji"
 
-#: src/my_game_list/moderation/models.py:67
+#: src/my_game_list/moderation/models.py:44
+msgid "User submitted"
+msgstr "Zgłoszone przez użytkownika"
+
+#: src/my_game_list/moderation/models.py:45
+msgid "Admin direct"
+msgstr "Admin bezpośrednio"
+
+#: src/my_game_list/moderation/models.py:84
 msgid "target type"
 msgstr "typ celu"
 
-#: src/my_game_list/moderation/models.py:125
+#: src/my_game_list/moderation/models.py:142
 msgid "reported value"
 msgstr "zgłoszona wartość"
 
-#: src/my_game_list/moderation/models.py:130
+#: src/my_game_list/moderation/models.py:147
 msgid "reason"
 msgstr "powód"
 
-#: src/my_game_list/moderation/models.py:165
+#: src/my_game_list/moderation/models.py:151
+msgid "source"
+msgstr "źródło"
+
+#: src/my_game_list/moderation/models.py:189
 msgid "report"
 msgstr "zgłoszenie"
 
-#: src/my_game_list/moderation/models.py:166
+#: src/my_game_list/moderation/models.py:190
 msgid "reports"
 msgstr "zgłoszenia"
 
-#: src/my_game_list/moderation/models.py:296
+#: src/my_game_list/moderation/models.py:244
+#, python-format
+msgid "Accepting a %(target_type)s report is not yet supported."
+msgstr ""
+"Akceptowanie zgłoszenia typu %(target_type)s nie jest jeszcze obsługiwane."
+
+#: src/my_game_list/moderation/models.py:260
+msgid "Only a pending report can be accepted."
+msgstr "Tylko oczekujące zgłoszenie może zostać zaakceptowane."
+
+#: src/my_game_list/moderation/models.py:299
+msgid "Only a pending report can be rejected."
+msgstr "Tylko oczekujące zgłoszenie może zostać odrzucone."
+
+#: src/my_game_list/moderation/models.py:335
 msgid "issued at"
 msgstr "wystawiono"
 
-#: src/my_game_list/moderation/models.py:301
+#: src/my_game_list/moderation/models.py:340
 msgid "warning"
 msgstr "ostrzeżenie"
 
-#: src/my_game_list/moderation/models.py:302
+#: src/my_game_list/moderation/models.py:341
 msgid "warnings"
 msgstr "ostrzeżenia"
 
-#: src/my_game_list/my_game_list/exceptions.py:14
+#: src/my_game_list/moderation/serializers.py:126
+#, python-format
+msgid "Reporting a %(target_type)s is not yet supported."
+msgstr "Zgłaszanie typu %(target_type)s nie jest jeszcze obsługiwane."
+
+#: src/my_game_list/moderation/serializers.py:131
+#, python-format
+msgid "This field is required for %(target_type)s reports."
+msgstr "To pole jest wymagane dla zgłoszeń typu %(target_type)s."
+
+#: src/my_game_list/moderation/serializers.py:136
+msgid "This item has no reportable user (its adding user was deleted)."
+msgstr ""
+"Ten element nie ma użytkownika, którego można zgłosić (użytkownik, który go "
+"dodał, został usunięty)."
+
+#: src/my_game_list/moderation/serializers.py:140
+msgid "You cannot report your own content."
+msgstr "Nie możesz zgłosić własnej zawartości."
+
+#: src/my_game_list/moderation/serializers.py:149
+msgid "You already have a pending report for this."
+msgstr "Masz już oczekujące zgłoszenie dotyczące tego elementu."
+
+#: src/my_game_list/moderation/serializers.py:185
+msgid "This admin action cannot target a staff user."
+msgstr "Ta czynność administracyjna nie może dotyczyć użytkownika personelu."
+
+#: src/my_game_list/moderation/serializers.py:189
+msgid "This has already been moderated."
+msgstr "To zostało już zmoderowane."
+
+#: src/my_game_list/my_game_list/exceptions.py:18
 msgid "There is a conflict with the current state of the target resource."
 msgstr "Wystąpił konflikt z bieżącym stanem docelowego zasobu."
 
@@ -753,38 +854,58 @@ msgstr "Angielski"
 msgid "Polish"
 msgstr "Polski"
 
-#: src/my_game_list/users/models.py:19
+#: src/my_game_list/users/models.py:23
 msgid "Male"
 msgstr "Mężczyzna"
 
-#: src/my_game_list/users/models.py:20
+#: src/my_game_list/users/models.py:24
 msgid "Female"
 msgstr "Kobieta"
 
-#: src/my_game_list/users/models.py:27
+#: src/my_game_list/users/models.py:31
 msgid "email address"
 msgstr "adres e-mail"
 
-#: src/my_game_list/users/models.py:39
+#: src/my_game_list/users/models.py:43
 msgid "gender"
 msgstr "płeć"
 
-#: src/my_game_list/users/models.py:46
+#: src/my_game_list/users/models.py:50
 msgid "last active"
 msgstr "ostatnio aktywny"
 
-#: src/my_game_list/users/models.py:52
+#: src/my_game_list/users/models.py:56
 msgid "is banned"
 msgstr "zbanowany"
 
-#: src/my_game_list/users/models.py:57
+#: src/my_game_list/users/models.py:70
+msgid "banned at"
+msgstr "zbanowano"
+
+#: src/my_game_list/users/models.py:76
+msgid "ban reason"
+msgstr "powód bana"
+
+#: src/my_game_list/users/models.py:82
 msgid "has moderated avatar"
 msgstr "zmoderowany awatar"
 
-#: src/my_game_list/users/models.py:62
+#: src/my_game_list/users/models.py:87
 msgid "has moderated username"
 msgstr "zmoderowana nazwa użytkownika"
 
-#: src/my_game_list/users/models.py:67
+#: src/my_game_list/users/models.py:92
 msgid "keycloak id"
 msgstr "id keycloak"
+
+#: src/my_game_list/users/models.py:125
+msgid "A reason is required to ban a user."
+msgstr "Powód jest wymagany, aby zbanować użytkownika."
+
+#: src/my_game_list/users/models.py:128
+msgid "This user is already banned."
+msgstr "Ten użytkownik jest już zbanowany."
+
+#: src/my_game_list/users/models.py:131
+msgid "Staff users cannot be banned through this action."
+msgstr "Użytkownicy personelu nie mogą zostać zbanowani w ten sposób."

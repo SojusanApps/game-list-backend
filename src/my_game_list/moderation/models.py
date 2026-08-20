@@ -38,6 +38,13 @@ class ReportStatus(models.TextChoices):
     REJECTED = "rejected", _("Rejected")
 
 
+class ReportSource(models.TextChoices):
+    """How a Report came to exist."""
+
+    USER_SUBMITTED = "user_submitted", _("User submitted")
+    ADMIN_DIRECT = "admin_direct", _("Admin direct")
+
+
 # Target types whose moderation action is "flag the target row's own is_moderated field". Maps
 # target_type to the Report attribute holding that target. AVATAR/USERNAME aren't here - their
 # moderation action flags the reported User directly, not a content row.
@@ -57,11 +64,21 @@ _MODERATION_USER_FLAG_ATTR: dict[str, str] = {
 }
 
 
+def is_target_already_moderated(target_type: str, target: models.Model) -> bool:
+    """Whether target is already flagged as moderated - target is the reported User for avatar/username."""
+    user_flag_attr = _MODERATION_USER_FLAG_ATTR.get(target_type)
+    if user_flag_attr:
+        return bool(getattr(target, user_flag_attr))
+
+    return bool(getattr(target, "is_moderated", False))
+
+
 class Report(BaseModel):
     """A user's flag that another user's content or profile field violates the rules."""
 
     TargetType = ReportTargetType
     Status = ReportStatus
+    Source = ReportSource
 
     target_type = models.CharField(
         _("target type"),
@@ -130,7 +147,14 @@ class Report(BaseModel):
         _("reason"),
         help_text="The reporter's free-text explanation of what's wrong.",
     )
-    status = models.CharField(
+    source = models.CharField(  # NOSONAR
+        _("source"),
+        max_length=20,
+        choices=ReportSource.choices,
+        default=ReportSource.USER_SUBMITTED,
+        help_text="Whether this report was filed by an ordinary user, or created by an admin via direct moderation.",
+    )
+    status = models.CharField(  # NOSONAR
         _("status"),
         max_length=10,
         choices=ReportStatus.choices,
@@ -217,16 +241,23 @@ class Report(BaseModel):
         target_attr = _MODERATION_TARGET_ATTR.get(self.target_type)
         target = getattr(self, target_attr) if target_attr else None
         if target is None:
-            message = f"Accepting a {self.target_type} report is not yet supported."
+            message = _("Accepting a %(target_type)s report is not yet supported.") % {
+                "target_type": self.target_type,
+            }
             raise ValidationError(message)
 
         target.is_moderated = True
         target.save(update_fields=["is_moderated"])
 
-    def accept(self: Self, admin_user: User) -> ModerationWarning:
-        """Accept this report: flag the target as moderated and issue exactly one Warning."""
+    def accept(self: Self, admin_user: User, *, issue_warning: bool = True) -> ModerationWarning | None:
+        """Accept this report: flag the target as moderated and, unless suppressed, issue one Warning.
+
+        issue_warning=False is used only when this report is being closed as a duplicate of another
+        report/direct-moderation action that already moderated the same target moments earlier in the
+        same sweep - a target is warned once per moderation event, not once per Report naming it.
+        """
         if self.status != ReportStatus.PENDING:
-            message = "Only a pending report can be accepted."
+            message = _("Only a pending report can be accepted.")
             raise ValidationError(message)
 
         with transaction.atomic():
@@ -237,27 +268,35 @@ class Report(BaseModel):
             self.reviewed_at = timezone.now()
             self.save(update_fields=["status", "reviewed_by", "reviewed_at"])
 
-            warning = ModerationWarning.objects.create(user=self.reported_user, report=self, issued_by=admin_user)
-
+            warning = None
             newly_banned = False
-            if not self.reported_user.is_banned and self.reported_user.warnings.count() >= WARNING_THRESHOLD:
-                self.reported_user.is_banned = True
-                self.reported_user.save(update_fields=["is_banned"])
-                newly_banned = True
+            if issue_warning:
+                warning = ModerationWarning.objects.create(user=self.reported_user, report=self, issued_by=admin_user)
 
-        notify_send(
-            sender=admin_user,
-            recipient=self.reported_user,
-            verb=NotificationVerb.ACCOUNT_BANNED if newly_banned else NotificationVerb.WARNING_ISSUED,
-            target=warning,
-            category=NotificationCategory.MODERATION,
-        )
+                if not self.reported_user.is_banned and self.reported_user.warnings.count() >= WARNING_THRESHOLD:
+                    self.reported_user.is_banned = True
+                    self.reported_user.banned_by = admin_user
+                    self.reported_user.banned_at = timezone.now()
+                    self.reported_user.ban_reason = f"Reached the warning threshold ({WARNING_THRESHOLD} warnings)."
+                    self.reported_user.save(
+                        update_fields=["is_banned", "banned_by", "banned_at", "ban_reason"],
+                    )
+                    newly_banned = True
+
+        if issue_warning:
+            notify_send(
+                sender=admin_user,
+                recipient=self.reported_user,
+                verb=NotificationVerb.ACCOUNT_BANNED if newly_banned else NotificationVerb.WARNING_ISSUED,
+                target=warning,
+                category=NotificationCategory.MODERATION,
+            )
         return warning
 
     def reject(self: Self, admin_user: User, rejection_reason: str = "") -> None:
         """Reject this report. No flag changes, no Warning, no notification."""
         if self.status != ReportStatus.PENDING:
-            message = "Only a pending report can be rejected."
+            message = _("Only a pending report can be rejected.")
             raise ValidationError(message)
 
         self.status = ReportStatus.REJECTED

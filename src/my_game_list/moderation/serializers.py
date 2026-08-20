@@ -2,9 +2,11 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Self
 
+from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from my_game_list.moderation.models import Report, ReportTargetType
+from my_game_list.moderation.models import Report, ReportTargetType, is_target_already_moderated
 from my_game_list.users.models import User
 from my_game_list.users.serializers import UserSimpleSerializer
 
@@ -69,6 +71,7 @@ class ReportSerializer(serializers.ModelSerializer[Report]):
             "reported_user",
             "reported_value",
             "reason",
+            "source",
             "status",
             "submitted_at",
             "reviewed_by",
@@ -120,22 +123,22 @@ class ReportCreateSerializer(serializers.ModelSerializer[Report]):
 
         spec = _TARGET_SPECS.get(target_type) if target_type is not None else None
         if spec is None:
-            message = f"Reporting a {target_type} is not yet supported."
+            message = _("Reporting a %(target_type)s is not yet supported.") % {"target_type": target_type}
             raise serializers.ValidationError({"target_type": message})
 
         target = attrs.get(spec.field)
         if target is None:
-            message = f"This field is required for {target_type} reports."
+            message = _("This field is required for %(target_type)s reports.") % {"target_type": target_type}
             raise serializers.ValidationError({spec.field: message})
 
         owner = spec.get_owner(target)
         if owner is None:
-            message = "This item has no reportable user (its adding user was deleted)."
-            raise serializers.ValidationError({"non_field_errors": [message]})
+            no_user_message = _("This item has no reportable user (its adding user was deleted).")
+            raise serializers.ValidationError({"non_field_errors": [no_user_message]})
 
         if owner.id == request.user.id:
-            message = "You cannot report your own content."
-            raise serializers.ValidationError({"non_field_errors": [message]})
+            own_content_message = _("You cannot report your own content.")
+            raise serializers.ValidationError({"non_field_errors": [own_content_message]})
 
         if Report.objects.filter(
             reported_by=request.user,
@@ -143,8 +146,8 @@ class ReportCreateSerializer(serializers.ModelSerializer[Report]):
             target_type=target_type,
             **{spec.field: target},
         ).exists():
-            message = "You already have a pending report for this."
-            raise serializers.ValidationError({"non_field_errors": [message]})
+            duplicate_report_message = _("You already have a pending report for this.")
+            raise serializers.ValidationError({"non_field_errors": [duplicate_report_message]})
 
         return attrs
 
@@ -165,3 +168,62 @@ class ReportCreateSerializer(serializers.ModelSerializer[Report]):
         kwargs.setdefault(spec.field, target)
 
         return Report.objects.create(**kwargs)
+
+
+class ReportDirectModerateSerializer(ReportCreateSerializer):
+    """A serializer for an admin directly moderating a target, bypassing the pending queue."""
+
+    def validate(self: Self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Run the base target/self-report checks, then refuse staff targets and already-moderated targets."""
+        attrs = super().validate(attrs)
+        target_type = attrs["target_type"]
+        spec = _TARGET_SPECS[target_type]
+        target = attrs[spec.field]
+        owner = spec.get_owner(target)
+
+        if owner.is_staff:
+            message = _("This admin action cannot target a staff user.")
+            raise serializers.ValidationError({"non_field_errors": [message]})
+
+        if is_target_already_moderated(target_type, target):
+            message = _("This has already been moderated.")
+            raise serializers.ValidationError({"non_field_errors": [message]})
+
+        return attrs
+
+    def create(self: Self, validated_data: dict[str, Any]) -> Report:
+        """Create a Report authored by the admin and immediately accept it, sweeping duplicate pending reports.
+
+        Any other still-pending Report on the exact same target is accepted alongside it (attributed to
+        the same admin) but does not itself issue a Warning - a target is warned once per moderation event.
+        """
+        request = self.context["request"]
+        target_type = validated_data["target_type"]
+        spec = _TARGET_SPECS[target_type]
+        target = validated_data[spec.field]
+        owner = spec.get_owner(target)
+
+        kwargs: dict[str, Any] = {
+            "target_type": target_type,
+            "reason": validated_data.get("reason", ""),
+            "reported_by": request.user,
+            "reported_user": owner,
+            "reported_value": spec.get_value(target),
+            "source": Report.Source.ADMIN_DIRECT,
+        }
+        kwargs.setdefault(spec.field, target)
+
+        with transaction.atomic():
+            report = Report.objects.create(**kwargs)
+            report.accept(request.user, issue_warning=True)
+
+            sibling_filter = {"reported_user": owner} if spec.field == "reported_user" else {spec.field: target}
+            siblings = Report.objects.filter(
+                status=Report.Status.PENDING,
+                target_type=target_type,
+                **sibling_filter,
+            ).exclude(pk=report.pk)
+            for sibling in siblings:
+                sibling.accept(request.user, issue_warning=False)
+
+        return report

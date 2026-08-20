@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, Any, Self
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from my_game_list.games.models import (
@@ -604,8 +605,10 @@ class TranslationSuggestionCreateSerializer(serializers.ModelSerializer[Translat
         max_length = TRANSLATION_SUGGESTION_FIELD_MAX_LENGTHS[field]
         proposed_value: str = attrs.get("proposed_value", "")
         if len(proposed_value) > max_length:
-            message = f"Ensure this field has no more than {max_length} characters."
-            raise serializers.ValidationError({"proposed_value": message})
+            proposed_value_message = _("Ensure this field has no more than %(max_length)s characters.") % {
+                "max_length": max_length,
+            }
+            raise serializers.ValidationError({"proposed_value": proposed_value_message})
 
         request = self.context["request"]
         if TranslationSuggestion.objects.filter(
@@ -614,7 +617,7 @@ class TranslationSuggestionCreateSerializer(serializers.ModelSerializer[Translat
             submitted_by=request.user,
             status=TranslationSuggestion.Status.PENDING,
         ).exists():
-            message = "You already have a pending suggestion for this game and field."
+            message = _("You already have a pending suggestion for this game and field.")
             raise serializers.ValidationError({"non_field_errors": [message]})
 
         return attrs

@@ -2,6 +2,7 @@
 
 from typing import Self
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from my_game_list.collections.models import (
@@ -265,11 +266,11 @@ class CollectionItemBulkReorderSerializer(serializers.Serializer[CollectionItem]
         positions = [entry["position"] for entry in value]
 
         if len(ids) != len(set(ids)):
-            message = "Duplicate item IDs are not allowed."
+            message = _("Duplicate item IDs are not allowed.")
             raise serializers.ValidationError(message)
 
         if len(positions) != len(set(positions)):
-            message = "Duplicate positions are not allowed."
+            message = _("Duplicate positions are not allowed.")
             raise serializers.ValidationError(message)
 
         return value

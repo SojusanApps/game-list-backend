@@ -12,7 +12,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from my_game_list.moderation.filters import ReportFilterSet
 from my_game_list.moderation.models import Report
-from my_game_list.moderation.serializers import ReportCreateSerializer, ReportSerializer
+from my_game_list.moderation.serializers import ReportCreateSerializer, ReportDirectModerateSerializer, ReportSerializer
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -36,6 +36,10 @@ if TYPE_CHECKING:
                     "Filter by what the report targets. Accepted values: avatar, username, review, "
                     "translation_suggestion, game_list_note, collection, collection_item_note."
                 ),
+            ),
+            OpenApiParameter(
+                name="source",
+                description="Filter by how the report came to exist. Accepted values: user_submitted, admin_direct.",
             ),
             OpenApiParameter(
                 name="status",
@@ -62,9 +66,15 @@ class ReportViewSet(GenericViewSet[Report], ListModelMixin, RetrieveModelMixin, 
     permission_classes = (IsAuthenticated,)
     filterset_class = ReportFilterSet
 
-    def get_serializer_class(self: Self) -> type[ReportCreateSerializer | ReportSerializer]:
+    def get_serializer_class(
+        self: Self,
+    ) -> type[ReportCreateSerializer | ReportDirectModerateSerializer | ReportSerializer]:
         """Get the serializer class for the report viewset."""
-        return ReportCreateSerializer if self.action == "create" else ReportSerializer
+        if self.action == "create":
+            return ReportCreateSerializer
+        if self.action == "direct_moderate":
+            return ReportDirectModerateSerializer
+        return ReportSerializer
 
     def get_queryset(self: Self) -> QuerySet[Report]:
         """Scope visible reports: staff see everything, everyone else sees only what they filed."""
@@ -78,6 +88,22 @@ class ReportViewSet(GenericViewSet[Report], ListModelMixin, RetrieveModelMixin, 
             return queryset
 
         return queryset.filter(reported_by=user)
+
+    @action(detail=False, methods=["post"], url_path="direct-moderate", permission_classes=[IsAdminUser])
+    def direct_moderate(self: Self, request: Request) -> Response:
+        """Admin fast lane: create and immediately accept a report, skipping the pending queue.
+
+        Sweeps and closes any other pending reports already filed against the exact same target,
+        without issuing them an additional warning. Refuses staff targets and already-moderated targets.
+        """
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        report = serializer.save()
+        output_serializer = ReportSerializer(report, context=self.get_serializer_context())
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def accept(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002

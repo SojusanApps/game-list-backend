@@ -18,6 +18,7 @@ class ReportFilterSet(filters.FilterSet):
         fields = (
             "id",
             "target_type",
+            "source",
             "status",
             "reported_by",
             "reported_user",

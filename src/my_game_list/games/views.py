@@ -8,6 +8,7 @@ from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status
@@ -855,7 +856,7 @@ class TranslationSuggestionViewSet(
         """Withdraw a pending suggestion. Only the original submitter may call this."""
         suggestion = self.get_object()
         if suggestion.status != TranslationSuggestion.Status.PENDING:
-            message = "Only a pending suggestion can be withdrawn."
+            message = _("Only a pending suggestion can be withdrawn.")
             raise ValidationError(message)
         suggestion.status = TranslationSuggestion.Status.WITHDRAWN
         suggestion.save(update_fields=["status"])
@@ -874,7 +875,7 @@ class TranslationSuggestionViewSet(
 
         suggestion = self.get_object()
         if suggestion.status != TranslationSuggestion.Status.PENDING:
-            message = "Only a pending suggestion can be accepted."
+            message = _("Only a pending suggestion can be accepted.")
             raise ValidationError(message)
 
         now = timezone.now()
@@ -921,7 +922,7 @@ class TranslationSuggestionViewSet(
 
         suggestion = self.get_object()
         if suggestion.status != TranslationSuggestion.Status.PENDING:
-            message = "Only a pending suggestion can be rejected."
+            message = _("Only a pending suggestion can be rejected.")
             raise ValidationError(message)
 
         rejection_reason = request.data.get("rejection_reason", "") if isinstance(request.data, dict) else ""

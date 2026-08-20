@@ -6,11 +6,15 @@ from typing import Any, ClassVar, Self
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from rest_framework.exceptions import ValidationError
 
 from my_game_list.my_game_list.models import BaseModel
 from my_game_list.my_game_list.slugs import generate_unique_slug
+from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
+from my_game_list.notifications.utils import notify_send
 
 
 class Gender(models.TextChoices):
@@ -51,7 +55,28 @@ class User(BaseModel, AbstractUser):
     is_banned = models.BooleanField(
         _("is banned"),
         default=False,
-        help_text="Whether this user has accumulated 3 warnings. Distinct from is_active, which gates login.",
+        help_text="Whether this user has accumulated 3 warnings, or been banned directly. Distinct from "
+        "is_active, which gates login.",
+    )
+    banned_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        related_name="banned_users",
+        null=True,
+        blank=True,
+        help_text="The admin who banned this user - automatically, at the 3rd warning, or via a direct ban.",
+    )
+    banned_at = models.DateTimeField(
+        _("banned at"),
+        null=True,
+        blank=True,
+        help_text="When this user was banned. Null if never banned.",
+    )
+    ban_reason = models.TextField(
+        _("ban reason"),
+        blank=True,
+        help_text="Why this user was banned - auto-generated for the warning threshold, admin-supplied "
+        "for a direct ban.",
     )
     has_moderated_avatar = models.BooleanField(
         _("has moderated avatar"),
@@ -88,6 +113,37 @@ class User(BaseModel, AbstractUser):
     def __str__(self: Self) -> str:
         """Return a string representation for this model."""
         return self.username
+
+    def ban(self: Self, admin_user: Self, reason: str) -> None:
+        """Directly ban this user, independent of any Report or Warning count.
+
+        Records provenance identically to the automatic ban-at-3-warnings path in
+        Report.accept(), so a banned account's record always answers who and why
+        regardless of which path triggered it.
+        """
+        if not reason:
+            message = _("A reason is required to ban a user.")
+            raise ValidationError(message)
+        if self.is_banned:
+            message = _("This user is already banned.")
+            raise ValidationError(message)
+        if self.is_staff:
+            message = _("Staff users cannot be banned through this action.")
+            raise ValidationError(message)
+
+        self.is_banned = True
+        self.banned_by = admin_user
+        self.banned_at = timezone.now()
+        self.ban_reason = reason
+        self.save(update_fields=["is_banned", "banned_by", "banned_at", "ban_reason"])
+
+        notify_send(
+            sender=admin_user,
+            recipient=self,
+            verb=NotificationVerb.ACCOUNT_BANNED,
+            target=self,
+            category=NotificationCategory.MODERATION,
+        )
 
     @property
     def gravatar_url(self: Self) -> str:

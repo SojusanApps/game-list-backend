@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Self
 
 from django.db.models import F, Max, Q
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
 from rest_framework import status
@@ -628,10 +629,10 @@ class CollectionItemViewSet(ModelViewSet[CollectionItem]):
         # Check if user can add items to this collection
         if collection.user != self.request.user:
             if collection.mode != CollectionMode.COLLABORATIVE:
-                message = "Only the owner can add items to non-collaborative collections."
+                message = _("Only the owner can add items to non-collaborative collections.")
                 raise PermissionDenied(message)
             if not collection.collaborators.filter(id=self.request.user.id).exists():
-                message = "You must be a collaborator to add items to this collection."
+                message = _("You must be a collaborator to add items to this collection.")
                 raise PermissionDenied(message)
 
         # Calculate order using fractional indexing for items with empty tier

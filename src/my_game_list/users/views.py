@@ -7,7 +7,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -90,3 +90,15 @@ class UserViewSet(GenericViewSet[UserModel], ListModelMixin, RetrieveModelMixin)
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(UserDetailSerializer(request.user, context=self.get_serializer_context()).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
+    def ban(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Directly ban a user, independent of any Report or Warning count. Requires a reason; refuses staff."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        user = self.get_object()
+        reason = request.data.get("reason", "") if isinstance(request.data, dict) else ""
+        user.ban(request.user, reason)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
