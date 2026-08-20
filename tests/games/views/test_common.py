@@ -12,7 +12,9 @@ from rest_framework.reverse import reverse
 from my_game_list.games.models import (
     Game,
     GameFollow,
+    GameList,
     GameListStatus,
+    GameReview,
     GameReviewRecommendation,
 )
 
@@ -201,6 +203,58 @@ def test_unauthorized_access_detail(viewname: str, api_client: APIClient) -> Non
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {"detail": "Authentication credentials were not provided."}
+
+
+@pytest.mark.parametrize(
+    "viewname",
+    [
+        pytest.param("games:game-lists-list", id="GameList listing is open to anonymous visitors."),
+        pytest.param("games:game-reviews-list", id="GameReview listing is open to anonymous visitors."),
+    ],
+)
+@pytest.mark.django_db()
+def test_anonymous_read_access_list(
+    viewname: str,
+    api_client: APIClient,
+    game_list_fixture: GameList,  # noqa: ARG001
+    game_review_fixture: GameReview,  # noqa: ARG001
+) -> None:
+    """GameList and GameReview listings can be read without authentication."""
+    response = api_client.get(reverse(viewname))
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db()
+def test_anonymous_read_access_detail(
+    api_client: APIClient,
+    game_list_fixture: GameList,
+    game_review_fixture: GameReview,
+) -> None:
+    """A single GameList/GameReview entry can be retrieved without authentication."""
+    response = api_client.get(reverse("games:game-lists-detail", (game_list_fixture.pk,)))
+    assert response.status_code == status.HTTP_200_OK
+
+    response = api_client.get(reverse("games:game-reviews-detail", (game_review_fixture.pk,)))
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.parametrize(
+    "viewname",
+    [
+        pytest.param("games:game-follows-list", id="GameFollow listing stays login-only."),
+    ],
+)
+@pytest.mark.django_db()
+def test_game_follow_list_stays_authenticated_only(
+    viewname: str,
+    api_client: APIClient,
+    game_follow_fixture: GameFollow,  # noqa: ARG001
+) -> None:
+    """GameFollow was not part of the anonymous-read scope and remains gated behind authentication."""
+    response = api_client.get(reverse(viewname))
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.parametrize(

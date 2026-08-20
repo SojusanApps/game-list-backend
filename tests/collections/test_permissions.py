@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from model_bakery import baker
 from rest_framework import status
 
-from my_game_list.collections.models import Collection, CollectionMode, CollectionVisibility
+from my_game_list.collections.models import Collection, CollectionItem, CollectionMode, CollectionVisibility
 from my_game_list.friendships.models import Friendship
 
 if TYPE_CHECKING:
@@ -279,3 +279,117 @@ def test_collection_list_includes_public_collections(
     assert response.status_code == status.HTTP_200_OK
     collection_ids = [c["id"] for c in response.data["results"]]
     assert public_collection_fixture.id in collection_ids
+
+
+# Anonymous (Unauthenticated) Visitor Tests
+
+
+@pytest.mark.django_db()
+def test_anonymous_can_view_public_collection(
+    api_client: APIClient,
+    public_collection_fixture: Collection,
+) -> None:
+    """Test that a fully anonymous visitor can view a public collection."""
+    response = api_client.get(f"/api/collection/collections/{public_collection_fixture.id}/")
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db()
+def test_anonymous_cannot_view_private_collection(
+    api_client: APIClient,
+    private_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor cannot view a private collection."""
+    response = api_client.get(f"/api/collection/collections/{private_collection_fixture.id}/")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db()
+def test_anonymous_cannot_view_friends_collection(
+    api_client: APIClient,
+    friends_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor cannot view a friends-only collection - they can never be a friend."""
+    response = api_client.get(f"/api/collection/collections/{friends_collection_fixture.id}/")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db()
+def test_anonymous_collection_list_only_includes_public(
+    api_client: APIClient,
+    private_collection_fixture: Collection,
+    public_collection_fixture: Collection,
+    friends_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor's collection listing only contains PUBLIC collections."""
+    response = api_client.get("/api/collection/collections/")
+    assert response.status_code == status.HTTP_200_OK
+    collection_ids = {c["id"] for c in response.data["results"]}
+    assert collection_ids == {public_collection_fixture.id}
+    assert private_collection_fixture.id not in collection_ids
+    assert friends_collection_fixture.id not in collection_ids
+
+
+@pytest.mark.django_db()
+def test_anonymous_cannot_update_public_collection(
+    api_client: APIClient,
+    public_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor cannot update a collection, even a public one."""
+    response = api_client.patch(
+        f"/api/collection/collections/{public_collection_fixture.id}/",
+        {"name": "Hacked Name"},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db()
+def test_anonymous_can_view_item_in_public_collection(
+    api_client: APIClient,
+    public_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor can view an item inside a public collection."""
+    game: Game = baker.make("games.Game")
+    item = CollectionItem.objects.create(
+        order=1,
+        collection=public_collection_fixture,
+        game=game,
+        added_by=public_collection_fixture.user,
+    )
+    response = api_client.get(f"/api/collection/collection-items/{item.id}/")
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db()
+def test_anonymous_cannot_view_item_in_private_collection(
+    api_client: APIClient,
+    private_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor cannot view an item inside a private collection."""
+    game: Game = baker.make("games.Game")
+    item = CollectionItem.objects.create(
+        order=1,
+        collection=private_collection_fixture,
+        game=game,
+        added_by=private_collection_fixture.user,
+    )
+    response = api_client.get(f"/api/collection/collection-items/{item.id}/")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db()
+def test_anonymous_cannot_create_collection_item(
+    api_client: APIClient,
+    public_collection_fixture: Collection,
+) -> None:
+    """Test that an anonymous visitor cannot add an item to any collection, even a public one."""
+    game: Game = baker.make("games.Game")
+    response = api_client.post(
+        "/api/collection/collection-items/",
+        {
+            "collection": public_collection_fixture.id,
+            "game": game.id,
+            "order": 1,
+        },
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

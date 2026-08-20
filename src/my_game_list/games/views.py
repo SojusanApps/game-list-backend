@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
@@ -221,7 +221,7 @@ class GameFollowViewSet(
 @extend_schema_view(
     list=extend_schema(
         description=(
-            "List game-list entries for the authenticated user. "
+            "List game-list entries. Open to anonymous visitors as well as authenticated users. "
             "Each entry tracks a user's relationship to a game including the play status "
             "(e.g. Playing, Completed, Plan to Play). "
             "Filter by status, game ID, user ID, or any game attribute."
@@ -326,7 +326,7 @@ class GameListViewSet(ModelViewSet[GameList]):
 
     queryset = GameList.objects.all()
     serializer_class = GameListSerializer
-    permission_classes = (IsAuthenticated, IsOwner)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsOwner)
     filterset_class = GameListFilterSet
 
     def get_serializer_class(
@@ -747,7 +747,7 @@ class GameReviewViewSet(ModelViewSet[GameReview]):
     """A ViewSet for the GameReview model."""
 
     queryset = GameReview.objects.all()
-    permission_classes = (IsAuthenticated, IsOwner)
+    permission_classes = (IsAuthenticatedOrReadOnly, IsOwner)
     filterset_class = GameReviewFilterSet
     pagination_class = GameReviewPagination
 

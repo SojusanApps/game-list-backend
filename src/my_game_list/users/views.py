@@ -7,7 +7,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -25,8 +25,8 @@ User: type[UserModel] = get_user_model()
 @extend_schema_view(
     list=extend_schema(
         description=(
-            "List user accounts. A non-staff user only sees active accounts; "
-            "is_staff users see every account, active or inactive. "
+            "List user accounts. Open to anonymous visitors. Anonymous and non-staff users only "
+            "see active accounts; is_staff users see every account, active or inactive. "
             "Filter by username (partial match), gender, or active status."
         ),
         parameters=[
@@ -61,15 +61,12 @@ class UserViewSet(GenericViewSet[UserModel], ListModelMixin, RetrieveModelMixin)
 
     queryset = User.objects.all()
     filterset_class = UserFilterSet
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
 
     def get_queryset(self: Self) -> QuerySet[UserModel]:
-        """Scope visible users: staff see everyone, everyone else sees only active accounts."""
+        """Scope visible users: staff see everyone, everyone else (including anonymous) sees only active accounts."""
         user = self.request.user
         queryset: QuerySet[UserModel] = super().get_queryset()
-
-        if not user.is_authenticated:
-            return queryset.none()
 
         if user.is_staff:
             return queryset

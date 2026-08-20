@@ -78,6 +78,10 @@ _Avoid_: token, claims (as a synonym for the concept itself — those are how an
 **User** (sharpened against Identity):
 The backend's own account record. Resolved _from_ an Identity via the Keycloak authentication class — never assumed to already exist for a given Identity, always looked up or provisioned by `sub`. See [ADR-0006](docs/adr/0006-provisioning-in-authentication-class.md).
 
+**Anonymous visitor**:
+A caller with no Identity and no User at all — not merely "not logged in as anyone in particular," but absent from the request entirely. For read access, treated exactly like an authenticated stranger with no Friendship or Collaborator standing: sees `Game`/Lookup Model data, other users' `GameList`/`GameReview` entries, active `User` accounts, and PUBLIC `Collection`s (never FRIENDS or PRIVATE, since an Anonymous visitor can't hold a Friendship or be a Collaborator). Every write action, and a few read actions that are inherently personal (`GameList.compare`, Steam/Title Import, `GameFollow`, `TranslationSuggestion` browsing), still require a real User.
+_Avoid_: unauthenticated user, guest (implies a distinct account type; there is none — it's simply the absence of one)
+
 ## Flagged ambiguities
 
 - "lookup model" applies to `GameType` and `GameStatus` even though their primary fields are named `type` and `status` rather than `name`.

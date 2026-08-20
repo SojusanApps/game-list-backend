@@ -127,15 +127,16 @@ class CollectionViewSet(ModelViewSet[Collection]):
     """A ViewSet for the Collection model.
 
     Permissions:
-    - List: Returns own collections + visible collections based on visibility
+    - List/Retrieve: Open to anonymous visitors too; returns visible collections based on
+      visibility (own, collaborated, PUBLIC, or FRIENDS collections owned by an authenticated
+      friend - an anonymous visitor only ever sees PUBLIC collections)
     - Create: Any authenticated user
-    - Retrieve: Based on visibility settings (PUBLIC/FRIENDS/PRIVATE)
     - Update/Delete: Only owner
     """
 
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
-    permission_classes = (IsAuthenticated, CollectionPermission)
+    permission_classes = (CollectionPermission,)
     filterset_class = CollectionFilterSet
 
     def get_queryset(self: Self) -> QuerySet[Collection]:
@@ -573,13 +574,14 @@ class CollectionItemViewSet(ModelViewSet[CollectionItem]):
     """A ViewSet for the CollectionItem model.
 
     Permissions:
-    - List: Filtered by collection visibility
+    - List/Retrieve: Open to anonymous visitors too; filtered by collection visibility
+      (an anonymous visitor only ever sees items from PUBLIC collections)
     - Create/Update/Delete: Owner or collaborator (if COLLABORATIVE mode)
     """
 
     queryset = CollectionItem.objects.all()
     serializer_class = CollectionItemSerializer
-    permission_classes = (IsAuthenticated, CollectionItemPermission)
+    permission_classes = (CollectionItemPermission,)
     filterset_class = CollectionItemFilterSet
 
     def get_queryset(self: Self) -> QuerySet[CollectionItem]:
