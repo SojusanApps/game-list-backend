@@ -22,7 +22,7 @@ SECRET_KEY = oeg("DJANGO_SECRET_KEY", "secret_key_to_change_on_production")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = oeg("DJANGO_DEBUG", "False").lower() == "true"
 
-CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "*").split(",")
+CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
 ALLOWED_HOSTS = oeg("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # The default value "" with a combination of split(",") returns [""] instead of empty list [], as a default value.
@@ -164,8 +164,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
 
-CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("my_game_list.my_game_list.authentication.KeycloakAuthentication",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -176,6 +174,11 @@ REST_FRAMEWORK = {
 }
 
 KEYCLOAK_SERVER_URL = oeg("KEYCLOAK_SERVER_URL", "https://keycloak_server_url_to_change_on_production")
+# The URL Keycloak stamps into a token's `iss` claim - i.e. whatever host/port the browser used to
+# reach it. Only differs from KEYCLOAK_SERVER_URL when the backend reaches Keycloak over a
+# different address than the browser does (e.g. an internal Docker network name vs. a published
+# host port); defaults to the same value since most deployments have a single address for both.
+KEYCLOAK_ISSUER_URL = oeg("KEYCLOAK_ISSUER_URL", KEYCLOAK_SERVER_URL)
 KEYCLOAK_REALM = oeg("KEYCLOAK_REALM", "my-game-list")
 KEYCLOAK_AUDIENCE = oeg("KEYCLOAK_AUDIENCE", "my-game-list-frontend")
 KEYCLOAK_CLIENT_ID = oeg("KEYCLOAK_CLIENT_ID", "my-game-list-frontend")

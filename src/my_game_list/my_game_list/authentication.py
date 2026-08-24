@@ -84,7 +84,7 @@ class KeycloakAuthentication(BaseAuthentication):
 
     def _decode_and_validate(self: Self, token: str) -> dict[str, Any]:
         """Verify signature, issuer, audience, and required claims. Raises AuthenticationFailed on any failure."""
-        expected_issuer = f"{settings.KEYCLOAK_SERVER_URL}/realms/{settings.KEYCLOAK_REALM}"
+        expected_issuer = f"{settings.KEYCLOAK_ISSUER_URL}/realms/{settings.KEYCLOAK_REALM}"
         try:
             signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
             claims = jwt.decode(

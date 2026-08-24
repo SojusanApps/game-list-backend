@@ -87,6 +87,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - loki
+      - shared
 
   set_state:
     <<: *base_app
@@ -287,3 +290,6 @@ volumes:
 
 networks:
   loki:
+  shared:
+    name: sojusan-apps-shared-network
+    external: true
