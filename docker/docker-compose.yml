@@ -34,26 +34,6 @@ services:
     networks:
       - loki
 
-  rabbitmq:
-    image: rabbitmq:4.3.5-management-alpine
-    container_name: my-game-list-rabbitmq
-    restart: "unless-stopped"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-      - "15692:15692"
-    volumes:
-      - ./rabbitmq/conf.d/20-deprecated-features.conf:/etc/rabbitmq/conf.d/20-deprecated-features.conf:ro
-    env_file:
-      - ./.env
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - loki
-
   redis:
     image: redis:8.10.0-alpine
     container_name: my-game-list-redis
@@ -74,8 +54,6 @@ services:
     restart: "unless-stopped"
     depends_on:
       postgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -109,8 +87,6 @@ services:
     container_name: my-game-list-celery-worker
     restart: "unless-stopped"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -127,14 +103,15 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - loki
+      - shared
 
   celery_beat:
     <<: *base_app
     container_name: my-game-list-celery-beat
     restart: "unless-stopped"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -151,6 +128,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - loki
+      - shared
 
   nginx:
     image: ghcr.io/sojusanapps/my-game-list-backend/nginx:latest
