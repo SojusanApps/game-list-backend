@@ -386,4 +386,10 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# Keycloak account-erasure event consumer. Distinct broker connection from CELERY_BROKER_URL:
+# same RabbitMQ user, but vhost "/" (not the "gamelist-backend" vhost Celery uses), and pointed
+# at a queue this codebase has read-only access to and never declares itself - see ADR-0018.
+KEYCLOAK_EVENTS_BROKER_URL = oeg("KEYCLOAK_EVENTS_BROKER_URL", "amqp://guest:guest@rabbitmq:5672//")
+KEYCLOAK_USER_DELETION_QUEUE = oeg("KEYCLOAK_USER_DELETION_QUEUE", "gamelist-backend.user-deletion")
+
 STEAM_API_KEY = oeg("STEAM_API_KEY", "steam_api_key_to_change_on_production")

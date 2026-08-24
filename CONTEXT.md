@@ -89,6 +89,10 @@ The backend's own account record. Resolved _from_ an Identity via the Keycloak a
 A caller with no Identity and no User at all — not merely "not logged in as anyone in particular," but absent from the request entirely. For read access, treated exactly like an authenticated stranger with no Friendship or Collaborator standing: sees `Game`/Lookup Model data, other users' `GameList`/`GameReview` entries, active `User` accounts, and PUBLIC `Collection`s (never FRIENDS or PRIVATE, since an Anonymous visitor can't hold a Friendship or be a Collaborator). Every write action, and a few read actions that are inherently personal (`GameList.compare`, Steam/Title Import, `GameFollow`, `TranslationSuggestion` browsing), still require a real User.
 _Avoid_: unauthenticated user, guest (implies a distinct account type; there is none — it's simply the absence of one)
 
+**Account erasure**:
+The permanent, hard deletion of a `User` and everything it owns (`GameList`, `GameReview`, `GameFollow`, `Collection`, `Friendship`/`FriendRequest`, `Report`s filed by or against the user, `Notification`s, etc.), triggered by consuming an upstream `user.deleted` event when Keycloak deletes the underlying Identity. A deliberate exception to shadow moderation — the account and its content are actually gone, not flagged. See [ADR-0018](docs/adr/0018-account-erasure-hard-deletes-data-exception-to-shadow-moderation.md).
+_Avoid_: deletion (too generic — collides with ordinary per-resource deletes), ban, deactivation (those leave the `User` row intact; this doesn't)
+
 ## Flagged ambiguities
 
 - "lookup model" applies to `GameType` and `GameStatus` even though their primary fields are named `type` and `status` rather than `name`.

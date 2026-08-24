@@ -132,6 +132,27 @@ services:
       - loki
       - shared
 
+  keycloak_events_consumer:
+    <<: *base_app
+    container_name: my-game-list-keycloak-events-consumer
+    restart: "unless-stopped"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      set_state:
+        condition: service_completed_successfully
+    command: keycloak_events_consumer
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f consume_keycloak_events || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - loki
+      - shared
+
   nginx:
     image: ghcr.io/sojusanapps/my-game-list-backend/nginx:latest
     container_name: my-game-list-nginx

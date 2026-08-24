@@ -21,6 +21,7 @@ dependencies = [
     "django-cors-headers==4.9.0",
     "PyJWT==2.13.0",
     "celery==5.6.3",
+    "kombu==5.6.1",
     "django-celery-results==2.6.0",
     "django-celery-beat",
     "gunicorn==26.0.0",

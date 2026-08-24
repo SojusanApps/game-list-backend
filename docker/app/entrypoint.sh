@@ -14,6 +14,9 @@ case "$1" in
     celery_beat)
         uv run celery -A my_game_list.my_game_list beat -l info --pidfile=/tmp/celerybeat.pid
     ;;
+    keycloak_events_consumer)
+        uv run django-admin consume_keycloak_events
+    ;;
     *)
         exec "$@"
     ;;

@@ -114,7 +114,7 @@ class GameFollow(BaseModel):
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="games_followed",
         help_text="The user following the game.",
     )
@@ -273,7 +273,7 @@ class GameReview(BaseModel):
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="reviews",
         help_text="The user who wrote the review.",
     )
