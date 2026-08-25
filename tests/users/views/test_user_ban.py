@@ -9,14 +9,14 @@ from rest_framework.request import Request
 from rest_framework.reverse import reverse
 from rest_framework.test import APIRequestFactory
 
-from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
-from my_game_list.notifications.models import Notification
-from my_game_list.users.views import UserViewSet
+from game_list.notifications.constants import NotificationCategory, NotificationVerb
+from game_list.notifications.models import Notification
+from game_list.users.views import UserViewSet
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

@@ -14,9 +14,9 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from my_game_list.friendships.models import FriendshipRequest
-from my_game_list.friendships.serializers import FriendshipRequestCreateSerializer
-from my_game_list.friendships.views import FriendshipRequestViewSet, FriendshipViewSet
+from game_list.friendships.models import FriendshipRequest
+from game_list.friendships.serializers import FriendshipRequestCreateSerializer
+from game_list.friendships.views import FriendshipRequestViewSet, FriendshipViewSet
 
 if TYPE_CHECKING:
     from rest_framework.response import Response

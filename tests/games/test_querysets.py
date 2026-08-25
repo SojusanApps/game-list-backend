@@ -3,7 +3,7 @@
 import pytest
 from model_bakery import baker
 
-from my_game_list.games.models import Game
+from game_list.games.models import Game
 
 
 @pytest.mark.django_db()

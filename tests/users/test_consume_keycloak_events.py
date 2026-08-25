@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 from django.conf import settings
 
-from my_game_list.users.management.commands import consume_keycloak_events as consumer_module
-from my_game_list.users.management.commands.consume_keycloak_events import Command, KeycloakEventsConsumer
+from game_list.users.management.commands import consume_keycloak_events as consumer_module
+from game_list.users.management.commands.consume_keycloak_events import Command, KeycloakEventsConsumer
 
 if TYPE_CHECKING:
     import pytest

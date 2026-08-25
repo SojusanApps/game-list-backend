@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from django.utils.translation import override
 from model_bakery import baker
 
-from my_game_list.games.models import (
+from game_list.games.models import (
     Company,
     Game,
     GameEngine,
@@ -25,7 +25,7 @@ from my_game_list.games.models import (
 )
 
 if TYPE_CHECKING:
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

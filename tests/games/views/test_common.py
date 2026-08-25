@@ -9,7 +9,7 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import (
+from game_list.games.models import (
     Game,
     GameFollow,
     GameList,
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 FORBIDDEN_DETAIL = "You do not have permission to perform this action."
 GAME_USER_DEPENDENT_LIST_VIEWNAMES = [

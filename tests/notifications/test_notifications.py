@@ -4,9 +4,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 
-from my_game_list.notifications.constants import NotificationCategory
-from my_game_list.notifications.models import Notification
-from my_game_list.notifications.utils import notify_send
+from game_list.notifications.constants import NotificationCategory
+from game_list.notifications.models import Notification
+from game_list.notifications.utils import notify_send
 
 User = get_user_model()
 

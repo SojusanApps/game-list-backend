@@ -1,6 +1,6 @@
 include README.md
 include MANIFEST.in
-graft my_game_list
+graft game_list
 prune tests
 global-exclude __pycache__
 global-exclude *.py[co]

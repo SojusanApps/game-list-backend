@@ -7,17 +7,17 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import GameReview
-from my_game_list.moderation.models import ModerationWarning, Report, ReportTargetType
-from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
-from my_game_list.notifications.models import Notification
+from game_list.games.models import GameReview
+from game_list.moderation.models import ModerationWarning, Report, ReportTargetType
+from game_list.notifications.constants import NotificationCategory, NotificationVerb
+from game_list.notifications.models import Notification
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

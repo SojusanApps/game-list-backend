@@ -1,12 +1,12 @@
-# MyGameList
+# Sojusan GameList
 
-[![MyGameList CI](https://github.com/SojusanApps/my-game-list-backend/actions/workflows/my-game-list.yml/badge.svg)](https://github.com/SojusanApps/my-game-list-backend/actions/workflows/my-game-list.yml)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=MyGameListPlaceholder_my-game-list-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=MyGameListPlaceholder_my-game-list-backend)
+[![GameList CI](https://github.com/SojusanApps/game-list-backend/actions/workflows/game-list.yml/badge.svg)](https://github.com/SojusanApps/game-list-backend/actions/workflows/game-list.yml)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=SojusanApps_game-list-backend&metric=coverage)](https://sonarcloud.io/summary/new_code?id=SojusanApps_game-list-backend)
 [![prek](https://img.shields.io/badge/prek-enabled-brightgreen)](https://github.com/j178/prek)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Black](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
-[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/summary/new_code?id=MyGameListPlaceholder_my-game-list-backend)
+[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/summary/new_code?id=SojusanApps_game-list-backend)
 
 Application to manage game lists.
 
@@ -76,7 +76,7 @@ Tag Legend:
 1. Clone the repository from GitHub with the command:
 
    ```shell
-   git clone https://github.com/SojusanApps/my-game-list-backend.git
+   git clone https://github.com/SojusanApps/game-list-backend.git
    ```
 
 1. Install all project dependencies:
@@ -100,36 +100,36 @@ Tag Legend:
 1. Create a new PostgreSQL database in docker:
 
    ```shell
-   docker run --name my-game-list-postgres \
+   docker run --name game-list-postgres \
       -p 5432:5432 \
-      -e POSTGRES_DB=my_game_list \
-      -e POSTGRES_USER=my_game_list \
-      -e POSTGRES_PASSWORD=my_game_list \
-      -v my-game-list-postgres-data:/var/lib/postgresql \
+      -e POSTGRES_DB=game_list \
+      -e POSTGRES_USER=game_list \
+      -e POSTGRES_PASSWORD=game_list \
+      -v game-list-postgres-data:/var/lib/postgresql \
       -d postgres:18.4-alpine
    ```
 
 1. Run database migrations:
 
    ```shell
-   uv run scripts/my-game-list-manage.py migrate
+   uv run scripts/game-list-manage.py migrate
    ```
 
 1. Create a Django admin account:
 
    ```shell
-   uv run scripts/my-game-list-manage.py createsuperuser
+   uv run scripts/game-list-manage.py createsuperuser
    ```
 
 1.Start the development server:
 
    ```shell
-   uv run scripts/my-game-list-manage.py runserver
+   uv run scripts/game-list-manage.py runserver
    ```
 
 ## Configuration
 
-* All configurations can be found in `my_game_list/settings/`
+* All configurations can be found in `game_list/settings/`
 * **base.py** - contains the base configuration of the application
 * **devel.py** - includes development configuration
 * **test.py** - contains configuration for tests
@@ -139,14 +139,14 @@ Tag Legend:
 
 Swagger enables you to visualize and interact with a RESTful API. It generates automatically based on the OpenAPI specification, a list of available endings along with the documentation contained in the code. In addition, it presents examples of data structures that should be sent to a given end and enables direct interaction with them.
 
-Swagger is available at: [http://127.0.0.1:8000/api/my-game-list/](http://127.0.0.1:8000/api/my-game-list/)
+Swagger is available at: [http://127.0.0.1:8000/api/schema/swagger-ui](http://127.0.0.1:8000/api/schema/swagger-ui)
 
 ## Tests
 
 1. Running tests using the PostgreSQL database:
 
    ```shell
-   uv run scripts/my-game-list-run-tests-with-pg.sh
+   uv run scripts/game-list-run-tests-with-pg.sh
    ```
 
 2. Starting the full test stack with the tox utility:

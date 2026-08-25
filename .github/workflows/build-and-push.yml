@@ -37,7 +37,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker images
-        run: uv run scripts/my-game-list-build.py build-images --tag latest
+        run: uv run scripts/game-list-build.py build-images --tag latest
 
       - name: Push Docker images
-        run: uv run scripts/my-game-list-build.py push-images --tag latest
+        run: uv run scripts/game-list-build.py push-images --tag latest

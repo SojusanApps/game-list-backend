@@ -6,7 +6,7 @@ import pytest
 from django.core.management import call_command
 from model_bakery import baker
 
-from my_game_list.games.models import Game, GameList, GameListStatus, GameStats
+from game_list.games.models import Game, GameList, GameListStatus, GameStats
 
 
 @pytest.mark.django_db()

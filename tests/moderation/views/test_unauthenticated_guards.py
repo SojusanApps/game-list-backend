@@ -14,7 +14,7 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from my_game_list.moderation.views import ReportViewSet
+from game_list.moderation.views import ReportViewSet
 
 if TYPE_CHECKING:
     from rest_framework.response import Response

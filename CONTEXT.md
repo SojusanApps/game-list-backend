@@ -1,4 +1,4 @@
-# MyGameList
+# GameList
 
 A backend service for tracking, rating, and reviewing video games. Users maintain personal game lists, follow games for release notifications, and interact socially through friendships.
 

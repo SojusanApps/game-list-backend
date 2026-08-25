@@ -1,4 +1,4 @@
-# AI Agent Instructions for MyGameList Backend
+# AI Agent Instructions for GameList Backend
 
 Welcome, AI coding agent! Follow these guidelines to ensure consistency and correctness in this repository.
 

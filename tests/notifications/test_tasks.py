@@ -7,11 +7,11 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from model_bakery import baker
 
-from my_game_list.games.models import Game, GameFollow
-from my_game_list.notifications.constants import NotificationCategory, NotificationDescription
-from my_game_list.notifications.models import Notification
-from my_game_list.notifications.tasks import cleanup_old_notifications, notify_game_releases
-from my_game_list.notifications.utils import notify_send
+from game_list.games.models import Game, GameFollow
+from game_list.notifications.constants import NotificationCategory, NotificationDescription
+from game_list.notifications.models import Notification
+from game_list.notifications.tasks import cleanup_old_notifications, notify_game_releases
+from game_list.notifications.utils import notify_send
 
 User = get_user_model()
 

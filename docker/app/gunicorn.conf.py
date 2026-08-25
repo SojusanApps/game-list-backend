@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from typing import Any
 
-from my_game_list.my_game_list.telemetry import setup_telemetry
+from game_list.game_list.telemetry import setup_telemetry
 
 oeg = os.environ.get
 

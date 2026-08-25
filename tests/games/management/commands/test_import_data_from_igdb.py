@@ -9,7 +9,7 @@ import pytest
 from django.core.management import CommandError, call_command
 from model_bakery import baker
 
-from my_game_list.games.management.commands._igdb_wrapper import (
+from game_list.games.management.commands._igdb_wrapper import (
     BaseIGDBResponse,
     IGDBCompanyResponse,
     IGDBEndpoints,
@@ -28,8 +28,8 @@ from my_game_list.games.management.commands._igdb_wrapper import (
     IGDBPlayerPerspectiveResponse,
     IGDBWrapper,
 )
-from my_game_list.games.management.commands.import_data_from_igdb import Command, RecursiveDataCollector
-from my_game_list.games.models import (
+from game_list.games.management.commands.import_data_from_igdb import Command, RecursiveDataCollector
+from game_list.games.models import (
     Company,
     ExternalGame,
     ExternalGameSource,
@@ -101,7 +101,7 @@ def test_handle_dispatches_single_import_type_with_import_all_false_by_default()
     with (
         patch.object(IGDBWrapper, "get_igdb_access_token", return_value="test-token"),
         patch.object(Command, "import_platforms") as mock_import,
-        patch("my_game_list.games.management.commands.import_data_from_igdb.time.sleep"),
+        patch("game_list.games.management.commands.import_data_from_igdb.time.sleep"),
     ):
         call_command("import_data_from_igdb", "platforms")
     mock_import.assert_called_once_with(import_all=False, import_start_timestamp=ANY)
@@ -113,7 +113,7 @@ def test_handle_passes_import_all_true_when_all_flag_is_set() -> None:
     with (
         patch.object(IGDBWrapper, "get_igdb_access_token", return_value="test-token"),
         patch.object(Command, "import_genres") as mock_import,
-        patch("my_game_list.games.management.commands.import_data_from_igdb.time.sleep"),
+        patch("game_list.games.management.commands.import_data_from_igdb.time.sleep"),
     ):
         call_command("import_data_from_igdb", "genres", "--all")
     mock_import.assert_called_once_with(import_all=True, import_start_timestamp=ANY)
@@ -126,7 +126,7 @@ def test_handle_dispatches_multiple_import_types_in_order() -> None:
         patch.object(IGDBWrapper, "get_igdb_access_token", return_value="test-token"),
         patch.object(Command, "import_platforms") as mock_platforms,
         patch.object(Command, "import_genres") as mock_genres,
-        patch("my_game_list.games.management.commands.import_data_from_igdb.time.sleep"),
+        patch("game_list.games.management.commands.import_data_from_igdb.time.sleep"),
     ):
         call_command("import_data_from_igdb", "platforms", "genres")
     mock_platforms.assert_called_once()
@@ -141,7 +141,7 @@ def test_handle_catches_exception_from_one_import_and_continues_with_the_next() 
         patch.object(IGDBWrapper, "get_igdb_access_token", return_value="test-token"),
         patch.object(Command, "import_platforms", side_effect=RuntimeError("boom")),
         patch.object(Command, "import_genres") as mock_genres,
-        patch("my_game_list.games.management.commands.import_data_from_igdb.time.sleep"),
+        patch("game_list.games.management.commands.import_data_from_igdb.time.sleep"),
     ):
         call_command("import_data_from_igdb", "platforms", "genres", stdout=out)
     mock_genres.assert_called_once()

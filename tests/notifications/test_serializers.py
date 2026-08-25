@@ -3,10 +3,10 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from my_game_list.notifications.constants import NotificationCategory, NotificationDescription, NotificationLevel
-from my_game_list.notifications.models import Notification
-from my_game_list.notifications.serializers import NotificationSerializer
-from my_game_list.notifications.utils import notify_send
+from game_list.notifications.constants import NotificationCategory, NotificationDescription, NotificationLevel
+from game_list.notifications.models import Notification
+from game_list.notifications.serializers import NotificationSerializer
+from game_list.notifications.utils import notify_send
 
 User = get_user_model()
 

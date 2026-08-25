@@ -10,7 +10,7 @@ import pytest
 import requests
 from django.conf import settings
 
-from my_game_list.games.management.commands._igdb_wrapper import (
+from game_list.games.management.commands._igdb_wrapper import (
     IGDBCompanyResponse,
     IGDBEndpoints,
     IGDBExternalGameResponse,
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Any
 
-MODULE = "my_game_list.games.management.commands._igdb_wrapper"
+MODULE = "game_list.games.management.commands._igdb_wrapper"
 TEST_ACCESS_TOKEN = "test-access-token"  # noqa: S105 (test fixture value, not a real secret)
 
 

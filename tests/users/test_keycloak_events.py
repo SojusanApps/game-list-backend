@@ -8,11 +8,11 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from model_bakery import baker
 
-from my_game_list.games.models import GameFollow, GameReview
-from my_game_list.users.keycloak_events import handle_keycloak_event
+from game_list.games.models import GameFollow, GameReview
+from game_list.users.keycloak_events import handle_keycloak_event
 
 if TYPE_CHECKING:
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 

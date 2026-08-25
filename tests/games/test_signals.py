@@ -4,7 +4,7 @@ import pytest
 from django_prometheus.testutils import assert_metric_diff, save_registry
 from model_bakery import baker
 
-from my_game_list.games.models import GameList, GameListStatus
+from game_list.games.models import GameList, GameListStatus
 
 
 @pytest.mark.django_db()

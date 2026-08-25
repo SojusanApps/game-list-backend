@@ -1,15 +1,15 @@
 x-base-app: &base_app
-  image: ghcr.io/sojusanapps/my-game-list-backend/app:latest
+  image: ghcr.io/sojusanapps/game-list-backend/app:latest
   build:
     context: ./app
     args:
-      - MGL_LOG_DIR_PATH=${MGL_LOG_DIR_PATH}
+      - GL_LOG_DIR_PATH=${GL_LOG_DIR_PATH}
   volumes:
-    - static_volume:/opt/my_game_list/static
-    - media_volume:/opt/my_game_list/media
+    - static_volume:/opt/game_list/static
+    - media_volume:/opt/game_list/media
     - type: volume
       source: app_log_volume
-      target: ${MGL_LOG_DIR_PATH}
+      target: ${GL_LOG_DIR_PATH}
   env_file:
     - ./.env
   networks:
@@ -18,7 +18,7 @@ x-base-app: &base_app
 services:
   postgres:
     image: postgres:18.4-alpine
-    container_name: my-game-list-postgres
+    container_name: game-list-postgres
     restart: "unless-stopped"
     ports:
       - "5432:5432"
@@ -36,7 +36,7 @@ services:
 
   redis:
     image: redis:8.10.0-alpine
-    container_name: my-game-list-redis
+    container_name: game-list-redis
     restart: "unless-stopped"
     ports:
       - "6379:6379"
@@ -50,7 +50,7 @@ services:
 
   app:
     <<: *base_app
-    container_name: my-game-list-app
+    container_name: game-list-app
     restart: "unless-stopped"
     depends_on:
       postgres:
@@ -71,7 +71,7 @@ services:
 
   set_state:
     <<: *base_app
-    container_name: my-game-list-set-state
+    container_name: game-list-set-state
     restart: "no"
     depends_on:
       postgres:
@@ -80,11 +80,11 @@ services:
         condition: service_healthy
     command: set_state
     volumes:
-      - static_volume:/opt/my_game_list/static
+      - static_volume:/opt/game_list/static
 
   celery_worker:
     <<: *base_app
-    container_name: my-game-list-celery-worker
+    container_name: game-list-celery-worker
     restart: "unless-stopped"
     depends_on:
       postgres:
@@ -98,7 +98,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "uv run celery -A my_game_list.my_game_list inspect ping || exit 1",
+          "uv run celery -A game_list.game_list inspect ping || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -109,7 +109,7 @@ services:
 
   celery_beat:
     <<: *base_app
-    container_name: my-game-list-celery-beat
+    container_name: game-list-celery-beat
     restart: "unless-stopped"
     depends_on:
       postgres:
@@ -134,7 +134,7 @@ services:
 
   keycloak_events_consumer:
     <<: *base_app
-    container_name: my-game-list-keycloak-events-consumer
+    container_name: game-list-keycloak-events-consumer
     restart: "unless-stopped"
     depends_on:
       postgres:
@@ -154,8 +154,8 @@ services:
       - shared
 
   nginx:
-    image: ghcr.io/sojusanapps/my-game-list-backend/nginx:latest
-    container_name: my-game-list-nginx
+    image: ghcr.io/sojusanapps/game-list-backend/nginx:latest
+    container_name: game-list-nginx
     build:
       context: ./nginx
     restart: "unless-stopped"
@@ -166,8 +166,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - static_volume:/opt/my_game_list/static
-      - media_volume:/opt/my_game_list/media
+      - static_volume:/opt/game_list/static
+      - media_volume:/opt/game_list/media
       - ./nginx/ssl:/etc/nginx/ssl
     healthcheck:
       test: ["CMD-SHELL", "curl -fk https://localhost/status || exit 1"]
@@ -179,7 +179,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v3.14.0
-    container_name: my-game-list-prometheus
+    container_name: game-list-prometheus
     restart: "unless-stopped"
     ports:
       - "9090:9090"
@@ -203,7 +203,7 @@ services:
 
   grafana:
     image: grafana/grafana:13.0.7
-    container_name: my-game-list-grafana
+    container_name: game-list-grafana
     restart: "unless-stopped"
     ports:
       - "3000:3000"
@@ -229,7 +229,7 @@ services:
 
   loki:
     image: grafana/loki:3.7.6
-    container_name: my-game-list-loki
+    container_name: game-list-loki
     ports:
       - "3100"
     command: -config.file=/etc/loki/local-config.yaml
@@ -243,10 +243,10 @@ services:
 
   alloy:
     image: grafana/alloy:v1.18.1
-    container_name: my-game-list-alloy
+    container_name: game-list-alloy
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy
-      - app_log_volume:/var/log/my_game_list
+      - app_log_volume:/var/log/game_list
     command: run /etc/alloy/config.alloy
     healthcheck:
       test:
@@ -264,7 +264,7 @@ services:
 
   tempo:
     image: grafana/tempo:3.0.3
-    container_name: my-game-list-tempo
+    container_name: game-list-tempo
     command: -config.file=/etc/tempo.yaml
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml

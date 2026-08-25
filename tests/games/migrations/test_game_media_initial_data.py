@@ -9,9 +9,9 @@ import importlib
 import pytest
 from django.apps import apps
 
-from my_game_list.games.models import GameMedia
+from game_list.games.models import GameMedia
 
-_migration = importlib.import_module("my_game_list.games.migrations.0011_initial_values_game_media")
+_migration = importlib.import_module("game_list.games.migrations.0011_initial_values_game_media")
 populate_game_media = _migration.populate_game_media
 remove_initial_game_media = _migration.remove_initial_game_media
 INITIAL_DATA = _migration.INITIAL_DATA

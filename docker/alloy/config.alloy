@@ -1,7 +1,7 @@
 loki.source.file "django_log_scraper" {
 	targets = [{
 		__address__ = "localhost",
-		__path__    = "/var/log/my_game_list/*",
+		__path__    = "/var/log/game_list/*",
 		app         = "app",
 	}]
 	forward_to = [loki.write.default.receiver]

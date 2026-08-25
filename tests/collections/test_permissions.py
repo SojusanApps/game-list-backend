@@ -7,14 +7,14 @@ from django.contrib.auth import get_user_model
 from model_bakery import baker
 from rest_framework import status
 
-from my_game_list.collections.models import Collection, CollectionItem, CollectionMode, CollectionVisibility
-from my_game_list.friendships.models import Friendship
+from game_list.collections.models import Collection, CollectionItem, CollectionMode, CollectionVisibility
+from game_list.friendships.models import Friendship
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 

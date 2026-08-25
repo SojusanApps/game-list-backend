@@ -6,21 +6,21 @@ import pytest
 from freezegun import freeze_time
 from model_bakery import baker
 
-from my_game_list.collections.models import Collection, CollectionItem, CollectionMode
-from my_game_list.games.models import (
+from game_list.collections.models import Collection, CollectionItem, CollectionMode
+from game_list.games.models import (
     GameList,
     GameListStatus,
     GameReview,
     TranslationSuggestion,
     TranslationSuggestionField,
 )
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game
+    from game_list.users.models import User as UserModel
 
 
 @pytest.fixture

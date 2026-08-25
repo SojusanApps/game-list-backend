@@ -8,12 +8,12 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import GameList, GameListStatus
+from game_list.games.models import GameList, GameListStatus
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 

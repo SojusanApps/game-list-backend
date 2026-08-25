@@ -6,12 +6,12 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.serializers import ValidationError
 
-from my_game_list.friendships.serializers import FriendshipRequestCreateSerializer
-from my_game_list.my_game_list.exceptions import SerializerValidationDetailError
+from game_list.friendships.serializers import FriendshipRequestCreateSerializer
+from game_list.game_list.exceptions import SerializerValidationDetailError
 
 if TYPE_CHECKING:
-    from my_game_list.friendships.models import Friendship, FriendshipRequest
-    from my_game_list.users.models import User as UserModel
+    from game_list.friendships.models import Friendship, FriendshipRequest
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 

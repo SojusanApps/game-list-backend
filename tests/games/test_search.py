@@ -1,7 +1,7 @@
 """Tests for the games app fuzzy title search helpers."""
 
-from my_game_list.games.models import Game
-from my_game_list.games.search import ranked_title_match_pks, score_title_match
+from game_list.games.models import Game
+from game_list.games.search import ranked_title_match_pks, score_title_match
 
 
 def test_score_title_match_returns_zero_for_empty_query() -> None:

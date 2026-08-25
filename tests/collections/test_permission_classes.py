@@ -16,22 +16,22 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from model_bakery import baker
 
-from my_game_list.collections.models import CollectionMode, CollectionVisibility
-from my_game_list.collections.permissions import (
+from game_list.collections.models import CollectionMode, CollectionVisibility
+from game_list.collections.permissions import (
     CanViewCollection,
     CollectionItemPermission,
     CollectionPermission,
     IsCollectionOwner,
     IsCollectionOwnerOrCollaborator,
 )
-from my_game_list.friendships.models import Friendship
+from game_list.friendships.models import Friendship
 
 if TYPE_CHECKING:
     from rest_framework.request import Request
     from rest_framework.views import APIView
 
-    from my_game_list.collections.models import Collection, CollectionItem
-    from my_game_list.users.models import User as UserModel
+    from game_list.collections.models import Collection, CollectionItem
+    from game_list.users.models import User as UserModel
 
 # `has_object_permission` never reads `view`, so a `None` stand-in is fine at runtime; cast once
 # here instead of scattering `type: ignore[arg-type]` over every call site below.

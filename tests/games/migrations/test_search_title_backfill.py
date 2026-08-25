@@ -10,9 +10,9 @@ import pytest
 from django.apps import apps
 from model_bakery import baker
 
-from my_game_list.games.models import Game
+from game_list.games.models import Game
 
-_migration = importlib.import_module("my_game_list.games.migrations.0029_add_search_title_to_game")
+_migration = importlib.import_module("game_list.games.migrations.0029_add_search_title_to_game")
 backfill_search_title = _migration.backfill_search_title
 
 

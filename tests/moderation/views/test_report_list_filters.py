@@ -6,15 +6,15 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import GameReview
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import GameReview
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

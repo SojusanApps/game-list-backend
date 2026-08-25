@@ -6,11 +6,11 @@ import pytest
 from django.utils import translation
 from rest_framework.exceptions import ValidationError
 
-from my_game_list.moderation.models import ModerationWarning, Report, ReportTargetType, is_target_already_moderated
+from game_list.moderation.models import ModerationWarning, Report, ReportTargetType, is_target_already_moderated
 
 if TYPE_CHECKING:
-    from my_game_list.games.models import GameReview
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import GameReview
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

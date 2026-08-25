@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 import pytest
 from django.contrib.auth import get_user_model
 
-from my_game_list.friendships.models import FriendshipRequest
-from my_game_list.my_game_list.exceptions import ConflictException
+from game_list.friendships.models import FriendshipRequest
+from game_list.game_list.exceptions import ConflictException
 
 if TYPE_CHECKING:
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 

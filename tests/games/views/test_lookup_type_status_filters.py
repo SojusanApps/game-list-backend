@@ -7,7 +7,7 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import GameStatus, GameType
+from game_list.games.models import GameStatus, GameType
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient

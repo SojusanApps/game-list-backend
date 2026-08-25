@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from my_game_list.moderation.masking import MODERATION_PLACEHOLDER_TEXT, mask_if_moderated
+from game_list.moderation.masking import MODERATION_PLACEHOLDER_TEXT, mask_if_moderated
 
 if TYPE_CHECKING:
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from my_game_list.games.tasks import nightly_igdb_import_and_recalculate
+from game_list.games.tasks import nightly_igdb_import_and_recalculate
 
 if TYPE_CHECKING:
     import pytest
@@ -16,7 +16,7 @@ def test_nightly_igdb_import_and_recalculate_calls_import_then_recalculate(
 ) -> None:
     """The task imports all IGDB data types first, then recalculates statistics."""
     mock_call_command = MagicMock()
-    monkeypatch.setattr("my_game_list.games.tasks.call_command", mock_call_command)
+    monkeypatch.setattr("game_list.games.tasks.call_command", mock_call_command)
 
     nightly_igdb_import_and_recalculate()
 
