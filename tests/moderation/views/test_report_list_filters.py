@@ -41,7 +41,7 @@ def test_list_filters_by_target_type_status_reported_by_and_reported_user(
         reported_user=other_user_fixture,
         reported_value=other_user_game_review_fixture.review,
         reason="Different status, must not match.",
-        status=Report.Status.REJECTED,
+        status=Report.StatusChoices.REJECTED,
     )
     wrong_reported_user = Report.objects.create(
         target_type=ReportTargetType.USERNAME,
@@ -55,7 +55,7 @@ def test_list_filters_by_target_type_status_reported_by_and_reported_user(
         reverse("moderation:reports-list"),
         {
             "target_type": str(ReportTargetType.REVIEW),
-            "status": str(Report.Status.PENDING),
+            "status": str(Report.StatusChoices.PENDING),
             "reported_by": str(admin_user_fixture.id),
             "reported_user": str(other_user_fixture.id),
         },
@@ -88,12 +88,12 @@ def test_list_filters_by_source(
         reported_by=admin_user_fixture,
         reported_user=other_user_fixture,
         reason="Created via direct moderation.",
-        source=Report.Source.ADMIN_DIRECT,
+        source=Report.SourceChoices.ADMIN_DIRECT,
     )
 
     response = admin_authenticated_api_client.get(
         reverse("moderation:reports-list"),
-        {"source": str(Report.Source.ADMIN_DIRECT)},
+        {"source": str(Report.SourceChoices.ADMIN_DIRECT)},
     )
 
     assert response.status_code == status.HTTP_200_OK

@@ -31,7 +31,7 @@ def test_accept_by_non_staff_is_forbidden(
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     report.refresh_from_db()
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING
 
 
 @pytest.mark.django_db()
@@ -42,7 +42,11 @@ def test_accept_of_non_pending_report_is_rejected(
     make_review_report: Callable[..., Report],
 ) -> None:
     """Accepting a report that is no longer pending (e.g. already rejected) is rejected."""
-    report = make_review_report(admin_user_fixture, other_user_game_review_fixture, status=Report.Status.REJECTED)
+    report = make_review_report(
+        admin_user_fixture,
+        other_user_game_review_fixture,
+        status=Report.StatusChoices.REJECTED,
+    )
 
     response = admin_authenticated_api_client.post(reverse("moderation:reports-accept", kwargs={"pk": report.id}))
 

@@ -29,7 +29,7 @@ def _issue_warnings(
             reported_user=reported_user,
             reported_value=f"bad username {i}",
             reason="Offensive.",
-            status=Report.Status.ACCEPTED,
+            status=Report.StatusChoices.ACCEPTED,
         )
         ModerationWarning.objects.create(user=reported_user, report=report, issued_by=reported_by)
 

@@ -45,8 +45,8 @@ def test_direct_moderate_flags_target_issues_warning_and_notifies(
     assert other_user_game_review_fixture.is_moderated is True
 
     report = Report.objects.get(id=response.data["id"])
-    assert report.status == Report.Status.ACCEPTED
-    assert report.source == Report.Source.ADMIN_DIRECT
+    assert report.status == Report.StatusChoices.ACCEPTED
+    assert report.source == Report.SourceChoices.ADMIN_DIRECT
     assert report.reported_by == admin_user_fixture
     assert report.reported_user == other_user_fixture
 
@@ -85,7 +85,7 @@ def test_direct_moderate_sweeps_other_pending_reports_without_extra_warning(
 
     assert response.status_code == status.HTTP_201_CREATED
     sibling_report.refresh_from_db()
-    assert sibling_report.status == Report.Status.ACCEPTED
+    assert sibling_report.status == Report.StatusChoices.ACCEPTED
     assert sibling_report.reviewed_by == admin_user_fixture
     assert ModerationWarning.objects.filter(report=sibling_report).exists() is False
     assert ModerationWarning.objects.filter(user=other_user_fixture).count() == 1

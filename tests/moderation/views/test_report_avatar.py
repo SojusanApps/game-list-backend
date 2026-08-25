@@ -39,7 +39,7 @@ def test_create_report_against_avatar_has_blank_value_and_no_content_fk(
     assert report.target_game_list is None
     assert report.target_collection is None
     assert report.target_collection_item is None
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING
 
 
 @pytest.mark.django_db()

@@ -37,4 +37,4 @@ def test_create_report_against_collection_snapshots_name_and_description_and_own
     assert report.target_collection_id == other_user_collection_fixture.id
     assert other_user_collection_fixture.name in report.reported_value
     assert other_user_collection_fixture.description in report.reported_value
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING

@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.3.2] - 25.08.2026
+
+* Fixed sonar issues.
+
 ## v. [5.3.1] - 25.08.2026
 
 * Renamed project from `my-game-list` to `game-list`.

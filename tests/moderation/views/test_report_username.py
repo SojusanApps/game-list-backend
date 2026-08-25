@@ -35,7 +35,7 @@ def test_create_report_against_username_snapshots_value_and_no_content_fk(
     assert report.reported_user == other_user_fixture
     assert report.reported_value == other_user_fixture.username
     assert report.target_review is None
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING
 
 
 @pytest.mark.django_db()

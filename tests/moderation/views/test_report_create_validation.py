@@ -92,7 +92,7 @@ def test_create_allows_independent_report_from_different_reporter_same_review(
     assert (
         Report.objects.filter(
             target_review=other_user_game_review_fixture,
-            status=Report.Status.PENDING,
+            status=Report.StatusChoices.PENDING,
         ).count()
         == 2  # noqa: PLR2004
     )

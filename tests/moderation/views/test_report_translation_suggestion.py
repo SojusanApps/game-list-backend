@@ -36,4 +36,4 @@ def test_create_report_against_translation_suggestion_snapshots_value_and_owner(
     assert report.reported_user == other_user_translation_suggestion_fixture.submitted_by
     assert report.target_translation_suggestion_id == other_user_translation_suggestion_fixture.id
     assert report.reported_value == other_user_translation_suggestion_fixture.proposed_value
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING

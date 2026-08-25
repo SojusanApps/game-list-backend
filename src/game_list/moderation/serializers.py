@@ -142,7 +142,7 @@ class ReportCreateSerializer(serializers.ModelSerializer[Report]):
 
         if Report.objects.filter(
             reported_by=request.user,
-            status=Report.Status.PENDING,
+            status=Report.StatusChoices.PENDING,
             target_type=target_type,
             **{spec.field: target},
         ).exists():
@@ -209,7 +209,7 @@ class ReportDirectModerateSerializer(ReportCreateSerializer):
             "reported_by": request.user,
             "reported_user": owner,
             "reported_value": spec.get_value(target),
-            "source": Report.Source.ADMIN_DIRECT,
+            "source": Report.SourceChoices.ADMIN_DIRECT,
         }
         kwargs.setdefault(spec.field, target)
 
@@ -219,7 +219,7 @@ class ReportDirectModerateSerializer(ReportCreateSerializer):
 
             sibling_filter = {"reported_user": owner} if spec.field == "reported_user" else {spec.field: target}
             siblings = Report.objects.filter(
-                status=Report.Status.PENDING,
+                status=Report.StatusChoices.PENDING,
                 target_type=target_type,
                 **sibling_filter,
             ).exclude(pk=report.pk)

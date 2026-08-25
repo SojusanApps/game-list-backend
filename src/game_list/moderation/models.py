@@ -73,12 +73,51 @@ def is_target_already_moderated(target_type: str, target: models.Model) -> bool:
     return bool(getattr(target, "is_moderated", False))
 
 
+class ModerationWarning(BaseModel):
+    """One strike issued automatically and exactly once whenever a Report is accepted.
+
+    Named `ModerationWarning` (not `Warning`, the domain term in CONTEXT.md) to avoid shadowing
+    the builtin `Warning` exception class.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="warnings",
+        help_text="The user this warning was issued to.",
+    )
+    report = models.OneToOneField(
+        "Report",
+        on_delete=models.CASCADE,
+        related_name="warning",
+        help_text="The accepted report that caused this warning.",
+    )
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="issued_warnings",
+        null=True,
+        help_text="The admin who accepted the report and issued this warning.",
+    )
+    issued_at = models.DateTimeField(_("issued at"), auto_now_add=True)
+
+    class Meta(BaseModel.Meta):
+        """Meta data for the warning model."""
+
+        verbose_name = _("warning")
+        verbose_name_plural = _("warnings")
+
+    def __str__(self: Self) -> str:
+        """String representation of the warning model."""
+        return f"Warning for {self.user.username} ({self.issued_at})"
+
+
 class Report(BaseModel):
     """A user's flag that another user's content or profile field violates the rules."""
 
     TargetType = ReportTargetType
-    Status = ReportStatus
-    Source = ReportSource
+    StatusChoices = ReportStatus
+    SourceChoices = ReportSource
 
     target_type = models.CharField(
         _("target type"),
@@ -147,14 +186,14 @@ class Report(BaseModel):
         _("reason"),
         help_text="The reporter's free-text explanation of what's wrong.",
     )
-    source = models.CharField(  # NOSONAR
+    source = models.CharField(
         _("source"),
         max_length=20,
         choices=ReportSource.choices,
         default=ReportSource.USER_SUBMITTED,
         help_text="Whether this report was filed by an ordinary user, or created by an admin via direct moderation.",
     )
-    status = models.CharField(  # NOSONAR
+    status = models.CharField(
         _("status"),
         max_length=10,
         choices=ReportStatus.choices,
@@ -304,42 +343,3 @@ class Report(BaseModel):
         self.reviewed_at = timezone.now()
         self.rejection_reason = rejection_reason
         self.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason"])
-
-
-class ModerationWarning(BaseModel):
-    """One strike issued automatically and exactly once whenever a Report is accepted.
-
-    Named `ModerationWarning` (not `Warning`, the domain term in CONTEXT.md) to avoid shadowing
-    the builtin `Warning` exception class.
-    """
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="warnings",
-        help_text="The user this warning was issued to.",
-    )
-    report = models.OneToOneField(
-        Report,
-        on_delete=models.CASCADE,
-        related_name="warning",
-        help_text="The accepted report that caused this warning.",
-    )
-    issued_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        related_name="issued_warnings",
-        null=True,
-        help_text="The admin who accepted the report and issued this warning.",
-    )
-    issued_at = models.DateTimeField(_("issued at"), auto_now_add=True)
-
-    class Meta(BaseModel.Meta):
-        """Meta data for the warning model."""
-
-        verbose_name = _("warning")
-        verbose_name_plural = _("warnings")
-
-    def __str__(self: Self) -> str:
-        """String representation of the warning model."""
-        return f"Warning for {self.user.username} ({self.issued_at})"

@@ -20,7 +20,7 @@ class CustomDjangoTui(DjangoTui):
         self.app_name = "uv run scripts/game-list-manage.py"
 
 
-class Command(TuiCommand):  # NOSONAR
+class Command(TuiCommand):  # # NOSONAR(S8443) - Already inheriting from BaseCommand
     """Custom TUI command for game_list app."""
 
     def handle(self, *args: Any, shell: bool = False, **options: Any) -> None:  # noqa: ANN401, ARG002

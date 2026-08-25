@@ -36,4 +36,4 @@ def test_create_report_against_game_list_note_snapshots_value_and_owner(
     assert report.reported_user == other_user_game_list_fixture.user
     assert report.target_game_list_id == other_user_game_list_fixture.id
     assert report.reported_value == other_user_game_list_fixture.description
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING

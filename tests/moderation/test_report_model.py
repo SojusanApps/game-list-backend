@@ -86,7 +86,7 @@ def test_accept_raises_when_target_type_has_no_target_row(
 
     assert "not yet supported" in str(exception_info.value.detail)
     report.refresh_from_db()
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING
 
 
 @pytest.mark.django_db()

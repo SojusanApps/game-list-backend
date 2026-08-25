@@ -39,4 +39,4 @@ def test_create_report_against_collection_item_note_snapshots_value_and_added_by
     assert report.reported_user != collection_owner_fixture
     assert report.target_collection_item_id == other_user_collection_item_fixture.id
     assert report.reported_value == other_user_collection_item_fixture.description
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING

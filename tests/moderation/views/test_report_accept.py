@@ -37,7 +37,7 @@ def test_accept_by_admin_moderates_review_creates_warning_and_notifies(
     assert other_user_game_review_fixture.is_moderated is True
 
     report.refresh_from_db()
-    assert report.status == Report.Status.ACCEPTED
+    assert report.status == Report.StatusChoices.ACCEPTED
     assert report.reviewed_by == admin_user_fixture
     assert report.reviewed_at is not None
 
