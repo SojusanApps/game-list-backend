@@ -1,4 +1,4 @@
-"""Tests for the `backfill_search_title` RunPython function in 0029_add_search_title_to_game.
+"""Tests for the `backfill_search_title` RunPython function in the games app's squashed initial migration.
 
 The current model shape matches what the migration expects, so the function is called
 directly with the real `django.apps.apps` registry instead of a migration-state harness.
@@ -12,7 +12,7 @@ from model_bakery import baker
 
 from game_list.games.models import Game
 
-_migration = importlib.import_module("game_list.games.migrations.0029_add_search_title_to_game")
+_migration = importlib.import_module("game_list.games.migrations.0001_initial")
 backfill_search_title = _migration.backfill_search_title
 
 
