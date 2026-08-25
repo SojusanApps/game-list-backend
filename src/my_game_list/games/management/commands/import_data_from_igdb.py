@@ -170,7 +170,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         )
 
         return {
-            "title": item_from_igdb.name,
+            "title_en": item_from_igdb.name,
             "slug": item_from_igdb.slug,
             "release_date": (
                 datetime.fromtimestamp(item_from_igdb.first_release_date, tz=UTC).date()
@@ -178,7 +178,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
                 else None
             ),
             "cover_image_id": (item_from_igdb.cover.image_id if item_from_igdb.cover else ""),
-            "summary": item_from_igdb.summary,
+            "summary_en": item_from_igdb.summary,
             "publisher": self._get_company(
                 company_type="publisher",
                 involved_companies=item_from_igdb.involved_companies,
@@ -196,23 +196,23 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
 
     def _get_game_type_input(self: Self, item_from_igdb: IGDBGameTypeResponse) -> dict[str, Any]:
         """Get the input for the GameType model."""
-        return {"type": item_from_igdb.type}
+        return {"type_en": item_from_igdb.type}
 
     def _get_game_status_input(self: Self, item_from_igdb: IGDBGameStatusResponse) -> dict[str, Any]:
         """Get the input for the GameStatus model."""
-        return {"status": item_from_igdb.status}
+        return {"status_en": item_from_igdb.status}
 
     def _get_platform_input(self: Self, item_from_igdb: IGDBPlatformResponse) -> dict[str, Any]:
         """Get the input for the Platform model."""
         return {
             "abbreviation": item_from_igdb.abbreviation,
-            "name": item_from_igdb.name,
+            "name_en": item_from_igdb.name,
         }
 
     def _get_company_input(self: Self, item_from_igdb: IGDBCompanyResponse) -> dict[str, Any]:
         """Get the input for the Company model."""
         return {
-            "name": item_from_igdb.name,
+            "name_en": item_from_igdb.name,
             "slug": item_from_igdb.slug,
             "company_logo_id": (item_from_igdb.logo.image_id if item_from_igdb.logo else ""),
         }
@@ -253,7 +253,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
                 | IGDBGameEngineResponse()
                 | IGDBExternalGameSourceResponse()
             ):
-                model_input.update({"name": item_from_igdb.name})
+                model_input.update({"name_en": item_from_igdb.name})
             case IGDBExternalGameResponse():
                 egs_mapping = extra_mappings.get("external_game_sources") if extra_mappings else None
                 egs_id = (

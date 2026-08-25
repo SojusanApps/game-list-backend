@@ -10,7 +10,8 @@ from model_bakery import baker
 from my_game_list.games.models import Game, GameFollow
 from my_game_list.notifications.constants import NotificationCategory, NotificationDescription
 from my_game_list.notifications.models import Notification
-from my_game_list.notifications.tasks import notify_game_releases
+from my_game_list.notifications.tasks import cleanup_old_notifications, notify_game_releases
+from my_game_list.notifications.utils import notify_send
 
 User = get_user_model()
 
@@ -70,3 +71,35 @@ def test_notify_game_releases() -> None:
     # Test running it again doesn't create duplicate notifications
     notify_game_releases()
     assert Notification.objects.count() == expected_notification_count
+
+
+@pytest.mark.django_db()
+def test_cleanup_old_notifications() -> None:
+    """Test that old read and unread notifications are deleted according to their respective cutoffs."""
+    remaining_notification_count = 2
+    total_notification_count = 4
+    now = timezone.now()
+    user1 = baker.make(User)
+    user2 = baker.make(User)
+
+    old_read = notify_send(sender=user1, recipient=user2, verb="old read")
+    old_read.mark_as_read()
+    Notification.objects.filter(pk=old_read.pk).update(timestamp=now - timedelta(days=15))
+
+    recent_read = notify_send(sender=user1, recipient=user2, verb="recent read")
+    recent_read.mark_as_read()
+    Notification.objects.filter(pk=recent_read.pk).update(timestamp=now - timedelta(days=13))
+
+    old_unread = notify_send(sender=user1, recipient=user2, verb="old unread")
+    Notification.objects.filter(pk=old_unread.pk).update(timestamp=now - timedelta(days=31))
+
+    recent_unread = notify_send(sender=user1, recipient=user2, verb="recent unread")
+    Notification.objects.filter(pk=recent_unread.pk).update(timestamp=now - timedelta(days=29))
+
+    assert Notification.objects.count() == total_notification_count
+
+    cleanup_old_notifications()
+
+    assert Notification.objects.count() == remaining_notification_count
+    remaining_ids = set(Notification.objects.values_list("pk", flat=True))
+    assert remaining_ids == {recent_read.pk, recent_unread.pk}

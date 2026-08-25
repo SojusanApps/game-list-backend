@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from django.core.cache import cache
 from model_bakery import baker
 from rest_framework import status
@@ -60,6 +61,47 @@ def test_steam_import_empty_library(api_client: APIClient, user_fixture: UserMod
         )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"matched": [], "not_found": [], "total_imported": 0}
+
+
+@pytest.mark.django_db()
+def test_steam_import_returns_502_when_steam_api_request_fails(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """A RequestException while calling the Steam API returns 502 with a descriptive detail message."""
+    api_client.force_authenticate(user=user_fixture)
+    failing_response = MagicMock()
+    failing_response.raise_for_status.side_effect = requests.RequestException("boom")
+    with patch("my_game_list.games.views.requests.get", return_value=failing_response):
+        response = api_client.get(
+            reverse("games:game-lists-steam-import"),
+            {"steam_profile_id": STEAM_PROFILE_ID},
+        )
+    assert response.status_code == status.HTTP_502_BAD_GATEWAY
+    assert STEAM_PROFILE_ID in response.json()["detail"]
+
+
+@pytest.mark.django_db()
+def test_steam_import_unmatched_game_with_steam_source_present_appears_in_not_found(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """When a Steam source exists but a Steam game has no matching ExternalGame, it lands in not_found."""
+    baker.make("games.ExternalGameSource", name="Steam")
+
+    api_client.force_authenticate(user=user_fixture)
+    with patch(
+        "my_game_list.games.views.requests.get",
+        return_value=_steam_response([{"appid": 999, "name": "Some Unmatched Game"}]),
+    ):
+        response = api_client.get(
+            reverse("games:game-lists-steam-import"),
+            {"steam_profile_id": STEAM_PROFILE_ID},
+        )
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["matched"] == []
+    assert data["not_found"] == [{"appid": 999, "name": "Some Unmatched Game"}]
 
 
 @pytest.mark.django_db()

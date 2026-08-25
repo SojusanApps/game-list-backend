@@ -43,3 +43,11 @@ def test_user_keycloak_id_is_unique_when_set() -> None:
 
     with pytest.raises(IntegrityError):
         User.objects.create(username="user_two", email="user-two@email.com", keycloak_id=keycloak_id)
+
+
+@pytest.mark.django_db()
+def test_user_gravatar_tag_renders_an_img_pointing_at_the_gravatar_url(user_fixture: UserModel) -> None:
+    """The admin gravatar preview is an <img> tag built from the user's gravatar_url."""
+    tag = user_fixture.gravatar_tag
+
+    assert tag == f'<img src={user_fixture.gravatar_url} width="125" height="150">'

@@ -231,6 +231,26 @@ def test_collaborator_can_add_item_to_collaborative_collection(
 
 
 @pytest.mark.django_db()
+def test_non_collaborator_cannot_add_item_to_collaborative_collection(
+    api_client: APIClient,
+    collaborative_collection_fixture: Collection,
+) -> None:
+    """Test that a non-collaborator cannot add items even to a collaborative collection."""
+    game: Game = baker.make("games.Game")
+    non_collaborator: UserModel = baker.make(User, username="non_collaborator")
+    api_client.force_authenticate(non_collaborator)
+    response = api_client.post(
+        "/api/collection/collection-items/",
+        {
+            "collection": collaborative_collection_fixture.id,
+            "game": game.id,
+            "order": 1,
+        },
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db()
 def test_non_collaborator_cannot_add_item_to_solo_collection(
     api_client: APIClient,
     public_collection_fixture: Collection,

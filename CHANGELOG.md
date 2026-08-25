@@ -2,6 +2,14 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.3.0] - 25.08.2026
+
+* Fixed Keycloak connection in docker.
+* Removed rabbitmq as the shared instance is now used.
+* Added `kombu` consumer for Keycloak events.
+* Added missing unit tests.
+* Fixed an issue with title update in import script.
+
 ## v. [5.2.2] - 20.08.2026
 
 * Updated docker containers.

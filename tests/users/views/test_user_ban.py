@@ -3,11 +3,15 @@
 from typing import TYPE_CHECKING
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.reverse import reverse
+from rest_framework.test import APIRequestFactory
 
 from my_game_list.notifications.constants import NotificationCategory, NotificationVerb
 from my_game_list.notifications.models import Notification
+from my_game_list.users.views import UserViewSet
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
@@ -114,3 +118,28 @@ def test_ban_by_non_staff_is_forbidden(
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db()
+def test_ban_action_rejects_an_unauthenticated_request(user_fixture: UserModel) -> None:
+    """The action's own authentication guard rejects an unauthenticated caller with a 401.
+
+    In practice the IsAdminUser permission class already rejects an anonymous caller with a 403
+    before this guard runs, so it's exercised here by invoking the action directly.
+    """
+    django_request = APIRequestFactory().post(
+        reverse("users:users-ban", kwargs={"pk": user_fixture.id}),
+        {"reason": "Trying to ban without authenticating."},
+        format="json",
+    )
+    request = Request(django_request)
+    request.user = AnonymousUser()
+
+    # Call the action method directly, bypassing dispatch()/check_permissions(), since the
+    # IsAdminUser permission class would otherwise reject an anonymous caller with a 403
+    # before this guard is ever reached.
+    response = UserViewSet().ban(request, pk=str(user_fixture.id))  # type: ignore[type-var, call-arg, misc]
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    user_fixture.refresh_from_db()
+    assert user_fixture.is_banned is False

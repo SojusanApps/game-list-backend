@@ -35,6 +35,14 @@ def test_random_ptp_success(
 
 
 @pytest.mark.django_db()
+def test_random_ptp_unauthenticated(api_client: APIClient) -> None:
+    """Test the random ptp endpoint returns 401 for an unauthenticated request."""
+    response = api_client.get(reverse("games:game-lists-random-ptp"))
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db()
 def test_random_ptp_not_found(
     api_client: APIClient,
     user_fixture: UserModel,

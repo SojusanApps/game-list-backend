@@ -76,6 +76,33 @@ def test_you_already_sent_friendship_request(
 
 
 @pytest.mark.django_db()
+def test_sender_already_sent_friendship_request_same_direction(
+    user_fixture: UserModel,
+    admin_user_fixture: UserModel,
+    user_and_admin_friendship_request_fixture: FriendshipRequest,  # noqa: ARG001
+) -> None:
+    """Test the sender-side duplicate message, reached by calling validate() directly.
+
+    Going through is_valid() for this exact (sender, receiver) pair trips the model's
+    unique_sender_receiver constraint (surfaced as a DRF UniqueTogetherValidator) before the
+    custom validate() method ever runs, so that branch can only be exercised by calling
+    validate() directly with already-resolved User instances, bypassing field-level validation.
+    """
+    serializer = FriendshipRequestCreateSerializer()
+
+    with pytest.raises(ValidationError) as exception_info:
+        serializer.validate({"message": "", "sender": user_fixture, "receiver": admin_user_fixture})
+
+    # Called directly (bypassing is_valid/run_validation), the raised error isn't wrapped in a
+    # {"non_field_errors": [...]} dict - that wrapping is applied by run_validation itself.
+    exc_detail = exception_info.value.detail
+    if isinstance(exc_detail, list):
+        assert str(exc_detail[0]) == "You already sent a friendship request to this user."
+    else:
+        raise SerializerValidationDetailError
+
+
+@pytest.mark.django_db()
 def test_user_already_sent_friendship_request(
     user_fixture: UserModel,
     admin_user_fixture: UserModel,

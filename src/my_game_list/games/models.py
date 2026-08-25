@@ -295,6 +295,10 @@ class GameReview(BaseModel):
 class Genre(BaseLookupModel, IGDBModel):
     """Data about game genres."""
 
+    if TYPE_CHECKING:
+        name_en: str
+        name_pl: str
+
     class Meta(BaseLookupModel.Meta):
         """Meta data for the genre model."""
 
