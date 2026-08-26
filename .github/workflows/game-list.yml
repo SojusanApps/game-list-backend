@@ -3,12 +3,12 @@ name: GameList CI
 on:
   push:
     branches:
-      - devel
+      - dev
       - master
   pull_request:
     types: [opened, edited, reopened, synchronize]
     branches:
-      - devel
+      - dev
       - master
 
 jobs:
