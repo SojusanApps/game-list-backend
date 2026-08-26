@@ -3,7 +3,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from django.http import HttpResponse
 from opentelemetry import trace as otel_trace
+from opentelemetry.sdk.trace import TracerProvider
 
 from game_list.game_list import telemetry as telemetry_module
 
@@ -66,7 +68,39 @@ def test_setup_telemetry_instruments_everything_without_an_otlp_endpoint(
         mock_cls.return_value.instrument.assert_called_once()
     mock_instrumentors["LoggingInstrumentor"].return_value.instrument.assert_called_once_with(
         set_logging_format=False,
+        inject_trace_context=True,
     )
+    mock_instrumentors["DjangoInstrumentor"].return_value.instrument.assert_called_once_with(
+        response_hook=telemetry_module.add_trace_id_response_header,
+    )
+
+
+@pytest.mark.parametrize(
+    ("env_value", "expected_rate"),
+    [
+        (None, 0.1),
+        ("1.0", 1.0),
+        ("0.5", 0.5),
+    ],
+)
+def test_setup_telemetry_sample_rate_is_env_driven(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_instrumentors: dict[str, MagicMock],  # noqa: ARG001
+    mock_tracing: dict[str, MagicMock],  # noqa: ARG001
+    env_value: str | None,
+    expected_rate: float,
+) -> None:
+    """The root sampler's rate defaults to 10% but can be overridden via OTEL_TRACES_SAMPLER_ARG."""
+    if env_value is None:
+        monkeypatch.delenv("OTEL_TRACES_SAMPLER_ARG", raising=False)
+    else:
+        monkeypatch.setenv("OTEL_TRACES_SAMPLER_ARG", env_value)
+    mock_trace_id_ratio_based = MagicMock()
+    monkeypatch.setattr(telemetry_module, "TraceIdRatioBased", mock_trace_id_ratio_based)
+
+    telemetry_module.setup_telemetry()
+
+    mock_trace_id_ratio_based.assert_called_once_with(expected_rate)
 
 
 @pytest.mark.parametrize(
@@ -94,3 +128,15 @@ def test_setup_telemetry_strips_the_scheme_from_the_otlp_endpoint(
     )
     for mock_cls in mock_instrumentors.values():
         mock_cls.return_value.instrument.assert_called_once()
+
+
+def test_add_trace_id_response_header_stamps_the_request_span_trace_id() -> None:
+    """The response hook exposes the request's real trace id, e.g. for gunicorn's access log."""
+    tracer = TracerProvider().get_tracer(__name__)
+    response = HttpResponse()
+
+    with tracer.start_as_current_span("test-span") as span:
+        expected_trace_id = otel_trace.format_trace_id(span.get_span_context().trace_id)
+        telemetry_module.add_trace_id_response_header(span, MagicMock(), response)
+
+    assert response["X-Trace-Id"] == expected_trace_id
