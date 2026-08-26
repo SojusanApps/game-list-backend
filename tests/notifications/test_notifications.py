@@ -64,9 +64,10 @@ def test_filter_notification() -> None:
 def test_notify_send_rejects_anonymous_recipient() -> None:
     """Test that sending a notification to an unauthenticated recipient raises a ValueError."""
     user1 = User.objects.create_user(username="user1", password="password", email="user1@email.com")  # noqa: S106
+    anonymous_recipient = AnonymousUser()
 
     with pytest.raises(ValueError, match=r"Recipient must be authenticated\."):
-        notify_send(sender=user1, recipient=AnonymousUser(), verb="verb")
+        notify_send(sender=user1, recipient=anonymous_recipient, verb="verb")
 
     assert Notification.objects.count() == 0
 
