@@ -9,7 +9,7 @@ from rest_framework.reverse import reverse
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

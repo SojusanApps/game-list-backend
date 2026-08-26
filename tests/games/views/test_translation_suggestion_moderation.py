@@ -6,14 +6,14 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import TranslationSuggestion, TranslationSuggestionField
-from my_game_list.moderation.masking import MODERATION_PLACEHOLDER_TEXT
+from game_list.games.models import TranslationSuggestion, TranslationSuggestionField
+from game_list.moderation.masking import MODERATION_PLACEHOLDER_TEXT
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()

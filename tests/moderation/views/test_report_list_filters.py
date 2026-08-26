@@ -6,15 +6,15 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import GameReview
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import GameReview
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -41,7 +41,7 @@ def test_list_filters_by_target_type_status_reported_by_and_reported_user(
         reported_user=other_user_fixture,
         reported_value=other_user_game_review_fixture.review,
         reason="Different status, must not match.",
-        status=Report.Status.REJECTED,
+        status=Report.StatusChoices.REJECTED,
     )
     wrong_reported_user = Report.objects.create(
         target_type=ReportTargetType.USERNAME,
@@ -55,7 +55,7 @@ def test_list_filters_by_target_type_status_reported_by_and_reported_user(
         reverse("moderation:reports-list"),
         {
             "target_type": str(ReportTargetType.REVIEW),
-            "status": str(Report.Status.PENDING),
+            "status": str(Report.StatusChoices.PENDING),
             "reported_by": str(admin_user_fixture.id),
             "reported_user": str(other_user_fixture.id),
         },
@@ -67,3 +67,36 @@ def test_list_filters_by_target_type_status_reported_by_and_reported_user(
     assert wrong_target_type.id not in returned_ids
     assert wrong_status.id not in returned_ids
     assert wrong_reported_user.id not in returned_ids
+
+
+@pytest.mark.django_db()
+def test_list_filters_by_source(
+    admin_authenticated_api_client: APIClient,
+    admin_user_fixture: UserModel,
+    other_user_fixture: UserModel,
+) -> None:
+    """Staff can filter the report queue by source (user_submitted vs admin_direct)."""
+    user_submitted = Report.objects.create(
+        target_type=ReportTargetType.USERNAME,
+        reported_by=admin_user_fixture,
+        reported_user=other_user_fixture,
+        reported_value=other_user_fixture.username,
+        reason="Filed through the normal flow.",
+    )
+    admin_direct = Report.objects.create(
+        target_type=ReportTargetType.AVATAR,
+        reported_by=admin_user_fixture,
+        reported_user=other_user_fixture,
+        reason="Created via direct moderation.",
+        source=Report.SourceChoices.ADMIN_DIRECT,
+    )
+
+    response = admin_authenticated_api_client.get(
+        reverse("moderation:reports-list"),
+        {"source": str(Report.SourceChoices.ADMIN_DIRECT)},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {entry["id"] for entry in response.data["results"]}
+    assert returned_ids == {admin_direct.id}
+    assert user_submitted.id not in returned_ids

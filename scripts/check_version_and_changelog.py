@@ -2,7 +2,7 @@
 
 import argparse
 
-FILENAMES_TO_BE_MODIFIED = ("CHANGELOG.md", "src/my_game_list/__init__.py")
+FILENAMES_TO_BE_MODIFIED = ("CHANGELOG.md", "src/game_list/__init__.py")
 
 
 def main(argv: list[str] | tuple[str] | None = None) -> int:

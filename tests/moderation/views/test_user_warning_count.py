@@ -6,12 +6,12 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import ModerationWarning, Report, ReportTargetType
+from game_list.moderation.models import ModerationWarning, Report, ReportTargetType
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 WARNING_COUNT = 2
 
@@ -29,7 +29,7 @@ def _issue_warnings(
             reported_user=reported_user,
             reported_value=f"bad username {i}",
             reason="Offensive.",
-            status=Report.Status.ACCEPTED,
+            status=Report.StatusChoices.ACCEPTED,
         )
         ModerationWarning.objects.create(user=reported_user, report=report, issued_by=reported_by)
 

@@ -11,7 +11,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 from rest_framework import status
 
-from my_game_list.users.middleware import UpdateLastActivityMiddleware
+from game_list.users.middleware import UpdateLastActivityMiddleware
 
 if TYPE_CHECKING:
     from django.test import RequestFactory

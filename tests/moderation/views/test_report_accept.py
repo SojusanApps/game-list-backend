@@ -6,17 +6,17 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import ModerationWarning, Report
-from my_game_list.notifications.constants import NotificationCategory
-from my_game_list.notifications.models import Notification
+from game_list.moderation.models import ModerationWarning, Report
+from game_list.notifications.constants import NotificationCategory
+from game_list.notifications.models import Notification
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import GameReview
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import GameReview
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -37,7 +37,7 @@ def test_accept_by_admin_moderates_review_creates_warning_and_notifies(
     assert other_user_game_review_fixture.is_moderated is True
 
     report.refresh_from_db()
-    assert report.status == Report.Status.ACCEPTED
+    assert report.status == Report.StatusChoices.ACCEPTED
     assert report.reviewed_by == admin_user_fixture
     assert report.reviewed_at is not None
 

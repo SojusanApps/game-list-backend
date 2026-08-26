@@ -9,13 +9,6 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:4317
 
-compactor:
-  compaction:
-    compaction_window: 1h       # Time to group blocks
-    max_block_bytes: 104857600  # 100 MB limits
-    block_retention: 24h        # Retain for 24 hours
-    compacted_block_retention: 1h
-
 storage:
   trace:
     backend: local
@@ -23,3 +16,12 @@ storage:
       path: /var/tempo/wal
     local:
       path: /var/tempo/blocks
+
+backend_scheduler:
+  provider:
+    compaction:
+      compaction:
+        compaction_window: 1h       # Time to group blocks
+        max_block_bytes: 104857600  # 100 MB limits
+        block_retention: 24h        # Retain for 24 hours
+        compacted_block_retention: 1h

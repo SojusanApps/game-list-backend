@@ -6,13 +6,13 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import GameList
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import GameList
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -36,4 +36,4 @@ def test_create_report_against_game_list_note_snapshots_value_and_owner(
     assert report.reported_user == other_user_game_list_fixture.user
     assert report.target_game_list_id == other_user_game_list_fixture.id
     assert report.reported_value == other_user_game_list_fixture.description
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING

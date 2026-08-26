@@ -1,7 +1,7 @@
 [project]
-name = "my-game-list"
+name = "game-list"
 dynamic = ["version"]
-description = "My Game List is a web application that allows users to manage their game lists."
+description = "Game List is a web application that allows users to manage their game lists."
 readme = "README.md"
 authors = [
     { name = "Rafał Grzegorczyk", email = "grzegorczyk1rafal@gmail.com" },
@@ -21,6 +21,7 @@ dependencies = [
     "django-cors-headers==4.9.0",
     "PyJWT==2.13.0",
     "celery==5.6.3",
+    "kombu==5.6.1",
     "django-celery-results==2.6.0",
     "django-celery-beat",
     "gunicorn==26.0.0",
@@ -59,7 +60,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = { attr = "my_game_list.__version__" }
+version = { attr = "game_list.__version__" }
 
 [project.optional-dependencies]
 test = [
@@ -101,8 +102,8 @@ dev = [
 django-admin = "django.core.management:execute_from_command_line"
 
 [project.urls]
-Homepage = "https://github.com/SojusanApps/my-game-list-backend"
-Repository = "https://github.com/SojusanApps/my-game-list-backend"
+Homepage = "https://github.com/SojusanApps/game-list-backend"
+Repository = "https://github.com/SojusanApps/game-list-backend"
 
 [tool.uv.sources]
 # Pinned to a commit on main, not a release: contains changes we need that
@@ -200,7 +201,7 @@ plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 strict = true
 
 [tool.django-stubs]
-django_settings_module = "my_game_list.settings.settings_mypy"
+django_settings_module = "game_list.settings.settings_mypy"
 
 [[tool.mypy.overrides]]
 module = "dacite"
@@ -211,7 +212,7 @@ implicit_reexport = true
 # django-stubs cannot resolve the substituted manager type (django-manager-missing),
 # and the resulting type-inference gap cascades into var-annotated errors on M2M
 # fields that target translated models. Both codes are intentionally suppressed here.
-module = "my_game_list.games.models"
+module = "game_list.games.models"
 disable_error_code = ["django-manager-missing", "var-annotated"]
 
 [[tool.mypy.overrides]]

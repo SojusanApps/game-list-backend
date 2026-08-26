@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from freezegun import freeze_time
 from model_bakery import baker
 
-from my_game_list.games.models import (
+from game_list.games.models import (
     Company,
     ExternalGame,
     ExternalGameSource,
@@ -27,7 +27,7 @@ from my_game_list.games.models import (
 )
 
 if TYPE_CHECKING:
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 
@@ -159,6 +159,7 @@ def game_review_fixture(user_fixture: UserModel, game_fixture: Game) -> GameRevi
     """A fixture with a test game review."""
     return GameReview.objects.create(
         review="test_review",
+        recommendation=GameReview.Recommendation.RECOMMENDED,
         game=game_fixture,
         user=user_fixture,
     )

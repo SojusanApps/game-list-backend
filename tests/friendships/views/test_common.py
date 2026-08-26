@@ -270,16 +270,18 @@ def test_get_model_detail(
 
 
 @pytest.mark.parametrize(
-    ("viewname", "fixture_name"),
+    ("viewname", "fixture_name", "client_fixture_name"),
     [
         pytest.param(
             "friendships:friendship-requests-detail",
             "user_and_admin_friendship_request_fixture",
+            "authenticated_api_client",
             id="Delete the friendship request.",
         ),
         pytest.param(
             "friendships:friendships-detail",
             "user_and_admin_friendship_fixture",
+            "admin_authenticated_api_client",
             id="Delete the friendship.",
         ),
     ],
@@ -289,11 +291,18 @@ def test_delete_model(
     request: pytest.FixtureRequest,
     viewname: str,
     fixture_name: str,
-    admin_authenticated_api_client: APIClient,
+    client_fixture_name: str,
 ) -> None:
-    """Check if deletion of the game model works properly."""
+    """Check if deletion of the model works properly.
+
+    A friendship request can only be withdrawn (destroyed) by its sender - here that's
+    user_fixture, so the "user_and_admin" friendship-request case uses the plain
+    authenticated client. A friendship may be ended by either party, so admin_user_fixture
+    (the `friend` in that fixture) can delete it directly.
+    """
     model_instance = request.getfixturevalue(fixture_name)
-    response = admin_authenticated_api_client.delete(reverse(viewname, (model_instance.pk,)))
+    client: APIClient = request.getfixturevalue(client_fixture_name)
+    response = client.delete(reverse(viewname, (model_instance.pk,)))
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert model_instance.__class__.objects.count() == 0

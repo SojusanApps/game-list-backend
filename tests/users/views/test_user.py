@@ -5,41 +5,49 @@ from unittest.mock import ANY
 
 import pytest
 from django.contrib.auth import get_user_model
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 
 
-@pytest.mark.parametrize(
-    ("viewname", "args"),
-    [
-        pytest.param(
-            "users:users-list",
-            (),
-            id="Check unauthorized access for getting a list of users.",
-        ),
-        pytest.param(
-            "users:users-detail",
-            (1,),
-            id="Check unauthorized access for getting a user with given id.",
-        ),
-    ],
-)
 @pytest.mark.django_db()
-def test_unauthorized_access(viewname: str, args: Sequence[int], api_client: APIClient) -> None:
-    """Check if the unauthorized user did not have access to the protected endpoints."""
-    response = api_client.get(reverse(viewname, args))
+def test_list_users_as_anonymous(api_client: APIClient, user_fixture: UserModel) -> None:
+    """An anonymous caller can list active user accounts, same as a non-staff caller."""
+    baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json() == {"detail": "Authentication credentials were not provided."}
+    response = api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {result["id"] for result in response.json()["results"]}
+    assert returned_ids == {user_fixture.pk}
+
+
+@pytest.mark.django_db()
+def test_get_user_as_anonymous(api_client: APIClient, user_fixture: UserModel) -> None:
+    """An anonymous caller can retrieve an active user account by ID, with private fields masked."""
+    response = api_client.get(reverse("users:users-detail", (user_fixture.pk,)))
+
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert body["id"] == user_fixture.pk
+    assert body["email"] is None
+
+
+@pytest.mark.django_db()
+def test_get_inactive_user_not_found_for_anonymous(api_client: APIClient) -> None:
+    """An anonymous caller gets a 404 when retrieving an inactive account by ID."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = api_client.get(reverse("users:users-detail", (inactive_user.pk,)))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.django_db()
@@ -82,6 +90,57 @@ def test_list_users(authenticated_api_client: APIClient, admin_user_fixture: Use
             },
         ],
     }
+
+
+@pytest.mark.django_db()
+def test_list_users_excludes_inactive_for_non_staff(
+    authenticated_api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """A non-staff caller does not see inactive accounts in the list."""
+    baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = authenticated_api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {result["id"] for result in response.json()["results"]}
+    assert returned_ids == {user_fixture.pk}
+
+
+@pytest.mark.django_db()
+def test_list_users_includes_inactive_for_staff(
+    admin_authenticated_api_client: APIClient,
+    admin_user_fixture: UserModel,
+) -> None:
+    """A staff caller sees inactive accounts in the list."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = admin_authenticated_api_client.get(reverse("users:users-list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    returned_ids = {result["id"] for result in response.json()["results"]}
+    assert returned_ids == {admin_user_fixture.pk, inactive_user.pk}
+
+
+@pytest.mark.django_db()
+def test_get_inactive_user_not_found_for_non_staff(authenticated_api_client: APIClient) -> None:
+    """A non-staff caller gets a 404 when retrieving an inactive account by ID."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = authenticated_api_client.get(reverse("users:users-detail", (inactive_user.pk,)))
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db()
+def test_get_inactive_user_found_for_staff(admin_authenticated_api_client: APIClient) -> None:
+    """A staff caller can retrieve an inactive account by ID."""
+    inactive_user = baker.make(User, username="inactive_user", email="inactive@email.com", is_active=False)
+
+    response = admin_authenticated_api_client.get(reverse("users:users-detail", (inactive_user.pk,)))
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["id"] == inactive_user.pk
 
 
 @pytest.mark.django_db()
@@ -135,7 +194,8 @@ def test_self_registration_is_removed(authenticated_api_client: APIClient) -> No
 
 @pytest.mark.django_db()
 def test_self_registration_is_removed_for_unauthenticated_caller(api_client: APIClient) -> None:
-    """An unauthenticated POST is rejected at the permission layer before method resolution."""
+    """An unauthenticated POST is rejected the same way as an authenticated one: no create action exists."""
     response = api_client.post(reverse("users:users-list"), {})
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    assert not User.objects.filter(username="testuser").exists()

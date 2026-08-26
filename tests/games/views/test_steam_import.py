@@ -4,17 +4,18 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from django.core.cache import cache
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import ExternalGame, ExternalGameSource, Game, GameList, GameListStatus
+from game_list.games.models import ExternalGame, ExternalGameSource, Game, GameList, GameListStatus
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 STEAM_PROFILE_ID = "76561198000000001"
@@ -53,13 +54,54 @@ def test_steam_import_missing_steam_profile_id(api_client: APIClient, user_fixtu
 def test_steam_import_empty_library(api_client: APIClient, user_fixture: UserModel) -> None:
     """Steam returns an empty game list → matched and not_found are both empty."""
     api_client.force_authenticate(user=user_fixture)
-    with patch("my_game_list.games.views.requests.get", return_value=_steam_response([])):
+    with patch("game_list.games.views.requests.get", return_value=_steam_response([])):
         response = api_client.get(
             reverse("games:game-lists-steam-import"),
             {"steam_profile_id": STEAM_PROFILE_ID},
         )
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"matched": [], "not_found": [], "total_imported": 0}
+
+
+@pytest.mark.django_db()
+def test_steam_import_returns_502_when_steam_api_request_fails(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """A RequestException while calling the Steam API returns 502 with a descriptive detail message."""
+    api_client.force_authenticate(user=user_fixture)
+    failing_response = MagicMock()
+    failing_response.raise_for_status.side_effect = requests.RequestException("boom")
+    with patch("game_list.games.views.requests.get", return_value=failing_response):
+        response = api_client.get(
+            reverse("games:game-lists-steam-import"),
+            {"steam_profile_id": STEAM_PROFILE_ID},
+        )
+    assert response.status_code == status.HTTP_502_BAD_GATEWAY
+    assert STEAM_PROFILE_ID in response.json()["detail"]
+
+
+@pytest.mark.django_db()
+def test_steam_import_unmatched_game_with_steam_source_present_appears_in_not_found(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """When a Steam source exists but a Steam game has no matching ExternalGame, it lands in not_found."""
+    baker.make("games.ExternalGameSource", name="Steam")
+
+    api_client.force_authenticate(user=user_fixture)
+    with patch(
+        "game_list.games.views.requests.get",
+        return_value=_steam_response([{"appid": 999, "name": "Some Unmatched Game"}]),
+    ):
+        response = api_client.get(
+            reverse("games:game-lists-steam-import"),
+            {"steam_profile_id": STEAM_PROFILE_ID},
+        )
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["matched"] == []
+    assert data["not_found"] == [{"appid": 999, "name": "Some Unmatched Game"}]
 
 
 @pytest.mark.django_db()
@@ -72,7 +114,7 @@ def test_steam_import_matched_game_appears_in_matched(api_client: APIClient, use
 
     api_client.force_authenticate(user=user_fixture)
     with patch(
-        "my_game_list.games.views.requests.get",
+        "game_list.games.views.requests.get",
         return_value=_steam_response([{"appid": 730, "name": "Counter-Strike 2"}]),
     ):
         response = api_client.get(
@@ -98,7 +140,7 @@ def test_steam_import_excludes_already_in_gamelist(api_client: APIClient, user_f
 
     api_client.force_authenticate(user=user_fixture)
     with patch(
-        "my_game_list.games.views.requests.get",
+        "game_list.games.views.requests.get",
         return_value=_steam_response([{"appid": 730, "name": "Counter-Strike 2"}]),
     ):
         response = api_client.get(
@@ -117,7 +159,7 @@ def test_steam_import_unmatched_game_appears_in_not_found(api_client: APIClient,
     """A Steam game with no matching ExternalGame record appears in not_found."""
     api_client.force_authenticate(user=user_fixture)
     with patch(
-        "my_game_list.games.views.requests.get",
+        "game_list.games.views.requests.get",
         return_value=_steam_response([{"appid": 20, "name": "Team Fortress Classic"}]),
     ):
         response = api_client.get(
@@ -136,7 +178,7 @@ def test_steam_import_cache_hit_skips_second_api_call(api_client: APIClient, use
     """Second request with same steam_profile_id within TTL does not call Steam API again."""
     api_client.force_authenticate(user=user_fixture)
     mock_get = MagicMock(return_value=_steam_response([]))
-    with patch("my_game_list.games.views.requests.get", mock_get):
+    with patch("game_list.games.views.requests.get", mock_get):
         api_client.get(reverse("games:game-lists-steam-import"), {"steam_profile_id": STEAM_PROFILE_ID})
         api_client.get(reverse("games:game-lists-steam-import"), {"steam_profile_id": STEAM_PROFILE_ID})
     assert mock_get.call_count == 1
@@ -155,7 +197,7 @@ def test_steam_import_with_polish_language_matches_and_returns_polish_title(
 
     api_client.force_authenticate(user=user_fixture)
     with patch(
-        "my_game_list.games.views.requests.get",
+        "game_list.games.views.requests.get",
         return_value=_steam_response([{"appid": 730, "name": "Counter-Strike 2"}]),
     ):
         response = api_client.get(
@@ -176,7 +218,7 @@ def test_steam_import_no_steam_source_in_db(api_client: APIClient, user_fixture:
     """If no Steam ExternalGameSource record exists, matched is empty and no exception is raised."""
     api_client.force_authenticate(user=user_fixture)
     with patch(
-        "my_game_list.games.views.requests.get",
+        "game_list.games.views.requests.get",
         return_value=_steam_response([{"appid": 730, "name": "Counter-Strike 2"}]),
     ):
         response = api_client.get(

@@ -7,14 +7,14 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.games.models import GameReview
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.games.models import GameReview
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -24,7 +24,12 @@ def test_create_rejects_self_report(
 ) -> None:
     """A user cannot report their own review."""
     game: Game = baker.make("games.Game")
-    own_review = GameReview.objects.create(review="my own review", game=game, user=user_fixture)
+    own_review = GameReview.objects.create(
+        review="my own review",
+        recommendation=GameReview.Recommendation.RECOMMENDED,
+        game=game,
+        user=user_fixture,
+    )
 
     payload = {
         "target_type": ReportTargetType.REVIEW,
@@ -87,7 +92,7 @@ def test_create_allows_independent_report_from_different_reporter_same_review(
     assert (
         Report.objects.filter(
             target_review=other_user_game_review_fixture,
-            status=Report.Status.PENDING,
+            status=Report.StatusChoices.PENDING,
         ).count()
         == 2  # noqa: PLR2004
     )

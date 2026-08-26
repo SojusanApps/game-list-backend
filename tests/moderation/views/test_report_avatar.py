@@ -6,12 +6,12 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from my_game_list.moderation.models import Report, ReportTargetType
+from game_list.moderation.models import Report, ReportTargetType
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -39,7 +39,7 @@ def test_create_report_against_avatar_has_blank_value_and_no_content_fk(
     assert report.target_game_list is None
     assert report.target_collection is None
     assert report.target_collection_item is None
-    assert report.status == Report.Status.PENDING
+    assert report.status == Report.StatusChoices.PENDING
 
 
 @pytest.mark.django_db()

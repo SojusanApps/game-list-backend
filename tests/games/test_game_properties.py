@@ -3,8 +3,8 @@
 import pytest
 from model_bakery import baker
 
-from my_game_list.games.models import Game, GameList
-from my_game_list.games.tasks import recalculate_ranks
+from game_list.games.models import Game, GameList
+from game_list.games.tasks import recalculate_ranks
 
 
 @pytest.mark.django_db()

@@ -9,8 +9,8 @@ from rest_framework.reverse import reverse
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.games.models import Game, GameReview
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game, GameReview
+    from game_list.users.models import User as UserModel
 
 
 @pytest.mark.django_db()
@@ -48,7 +48,12 @@ def test_banned_user_can_still_create_a_review(
 
     response = api_client.post(
         reverse("games:game-reviews-list"),
-        {"game": game_fixture.id, "review": "a review from a banned user", "user": user_fixture.id},
+        {
+            "game": game_fixture.id,
+            "review": "a review from a banned user",
+            "recommendation": "recommended",
+            "user": user_fixture.id,
+        },
         format="json",
     )
 

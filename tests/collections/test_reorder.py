@@ -1,5 +1,6 @@
 """Tests for the Collection reorder items endpoint."""
 
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import pytest
@@ -10,8 +11,8 @@ from rest_framework import status
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.collections.models import Collection, CollectionItem
-    from my_game_list.users.models import User
+    from game_list.collections.models import Collection, CollectionItem
+    from game_list.users.models import User
 
 
 @pytest.mark.django_db()
@@ -181,3 +182,73 @@ class TestCollectionReorderItems:
         assert item1.order is not None
         assert item3.order is not None
         assert item1.order > item3.order
+
+    def test_reorder_only_item_to_position_zero(
+        self,
+        authenticated_api_client: APIClient,
+        user_fixture: User,
+    ) -> None:
+        """Test that reordering the only item in a collection to position 0 defaults to order 1.0."""
+        collection: Collection = baker.make("collections.Collection", user=user_fixture)
+        item: CollectionItem = baker.make("collections.CollectionItem", collection=collection, order=5)
+
+        url = reverse(
+            "collections:collections-reorder-item",
+            kwargs={"pk": collection.pk, "item_id": item.pk},
+        )
+        data = {"position": 0}
+
+        response = authenticated_api_client.post(url, data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        item.refresh_from_db()
+        assert item.order == Decimal("1.0")
+
+    def test_reorder_only_item_to_position_beyond_end(
+        self,
+        authenticated_api_client: APIClient,
+        user_fixture: User,
+    ) -> None:
+        """Test that reordering the only item in a collection past the end defaults to order 1.0."""
+        collection: Collection = baker.make("collections.Collection", user=user_fixture)
+        item: CollectionItem = baker.make("collections.CollectionItem", collection=collection, order=5)
+
+        url = reverse(
+            "collections:collections-reorder-item",
+            kwargs={"pk": collection.pk, "item_id": item.pk},
+        )
+        data = {"position": 10}
+
+        response = authenticated_api_client.post(url, data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        item.refresh_from_db()
+        assert item.order == Decimal("1.0")
+
+    def test_reorder_item_between_items_with_equal_order_appends_to_end(
+        self,
+        authenticated_api_client: APIClient,
+        user_fixture: User,
+    ) -> None:
+        """Test that reordering between two items sharing the same order appends after the last one instead."""
+        collection: Collection = baker.make("collections.Collection", user=user_fixture)
+        moving_item: CollectionItem = baker.make("collections.CollectionItem", collection=collection, order=1)
+        tied_item_a: CollectionItem = baker.make("collections.CollectionItem", collection=collection, order=5)
+        tied_item_b: CollectionItem = baker.make("collections.CollectionItem", collection=collection, order=5)
+
+        url = reverse(
+            "collections:collections-reorder-item",
+            kwargs={"pk": collection.pk, "item_id": moving_item.pk},
+        )
+        data = {"position": 1}
+
+        response = authenticated_api_client.post(url, data, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        moving_item.refresh_from_db()
+        tied_item_a.refresh_from_db()
+        tied_item_b.refresh_from_db()
+        # Falls back to appending after the last tied item instead of computing a duplicate midpoint
+        assert tied_item_a.order == Decimal(5)
+        assert tied_item_b.order == Decimal(5)
+        assert moving_item.order == Decimal("6.0")

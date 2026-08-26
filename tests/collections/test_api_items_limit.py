@@ -10,9 +10,9 @@ from rest_framework import status
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.collections.models import Collection
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User
+    from game_list.collections.models import Collection
+    from game_list.games.models import Game
+    from game_list.users.models import User
 
 
 @pytest.mark.django_db()

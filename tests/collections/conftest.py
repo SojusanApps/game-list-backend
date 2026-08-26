@@ -6,7 +6,7 @@ import pytest
 from freezegun import freeze_time
 from model_bakery import baker
 
-from my_game_list.collections.models import (
+from game_list.collections.models import (
     Collection,
     CollectionItem,
     CollectionMode,
@@ -15,8 +15,8 @@ from my_game_list.collections.models import (
 )
 
 if TYPE_CHECKING:
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User as UserModel
+    from game_list.games.models import Game
+    from game_list.users.models import User as UserModel
 
 
 @pytest.fixture

@@ -16,28 +16,28 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Set up Python 3.14
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.14"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
 
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker images
-        run: uv run scripts/my-game-list-build.py build-images --tag latest
+        run: uv run scripts/game-list-build.py build-images --tag latest
 
       - name: Push Docker images
-        run: uv run scripts/my-game-list-build.py push-images --tag latest
+        run: uv run scripts/game-list-build.py push-images --tag latest

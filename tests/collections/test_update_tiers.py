@@ -7,13 +7,13 @@ from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
 
-from my_game_list.collections.models import Tier
+from game_list.collections.models import Tier
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
-    from my_game_list.collections.models import Collection, CollectionItem
-    from my_game_list.users.models import User
+    from game_list.collections.models import Collection, CollectionItem
+    from game_list.users.models import User
 
 
 @pytest.mark.django_db()

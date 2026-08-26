@@ -1,6 +1,6 @@
 """Tests for games utility functions."""
 
-from my_game_list.games.utils import normalize_title
+from game_list.games.utils import normalize_title
 
 
 def test_normalize_title_converts_special_chars_and_case() -> None:

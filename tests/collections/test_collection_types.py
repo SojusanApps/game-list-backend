@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 import pytest
 from model_bakery import baker
 
-from my_game_list.collections.models import Collection, CollectionItem, CollectionType
+from game_list.collections.models import Collection, CollectionItem, CollectionType
 
 if TYPE_CHECKING:
-    from my_game_list.games.models import Game
-    from my_game_list.users.models import User
+    from game_list.games.models import Game
+    from game_list.users.models import User
 
 
 @pytest.mark.django_db()

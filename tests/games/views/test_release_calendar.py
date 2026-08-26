@@ -8,7 +8,7 @@ from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
 
-from my_game_list.games.models import Game, GameStats
+from game_list.games.models import Game, GameStats
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient

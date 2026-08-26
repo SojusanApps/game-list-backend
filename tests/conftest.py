@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     import pytest_django
     from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
-    from my_game_list.users.models import User as UserModel
+    from game_list.users.models import User as UserModel
 
 User: type[UserModel] = get_user_model()
 
-_POSTGRES_IMAGE = "postgres:18.3-alpine"
+_POSTGRES_IMAGE = "postgres:18.4-alpine"
 
 
 @pytest.fixture(scope="session")

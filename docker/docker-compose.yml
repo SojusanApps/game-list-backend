@@ -1,15 +1,15 @@
 x-base-app: &base_app
-  image: ghcr.io/sojusanapps/my-game-list-backend/app:latest
+  image: ghcr.io/sojusanapps/game-list-backend/app:latest
   build:
     context: ./app
     args:
-      - MGL_LOG_DIR_PATH=${MGL_LOG_DIR_PATH}
+      - GL_LOG_DIR_PATH=${GL_LOG_DIR_PATH}
   volumes:
-    - static_volume:/opt/my_game_list/static
-    - media_volume:/opt/my_game_list/media
+    - static_volume:/opt/game_list/static
+    - media_volume:/opt/game_list/media
     - type: volume
       source: app_log_volume
-      target: ${MGL_LOG_DIR_PATH}
+      target: ${GL_LOG_DIR_PATH}
   env_file:
     - ./.env
   networks:
@@ -17,8 +17,8 @@ x-base-app: &base_app
 
 services:
   postgres:
-    image: postgres:18.3-alpine
-    container_name: my-game-list-postgres
+    image: postgres:18.4-alpine
+    container_name: game-list-postgres
     restart: "unless-stopped"
     ports:
       - "5432:5432"
@@ -27,25 +27,7 @@ services:
     env_file:
       - ./.env
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - loki
-
-  rabbitmq:
-    image: rabbitmq:4.2.5-management-alpine
-    container_name: my-game-list-rabbitmq
-    restart: "unless-stopped"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-      - "15692:15692"
-    env_file:
-      - ./.env
-    healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -53,13 +35,13 @@ services:
       - loki
 
   redis:
-    image: redis:8.6.1-alpine
-    container_name: my-game-list-redis
+    image: redis:8.10.0-alpine
+    container_name: game-list-redis
     restart: "unless-stopped"
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -68,12 +50,10 @@ services:
 
   app:
     <<: *base_app
-    container_name: my-game-list-app
+    container_name: game-list-app
     restart: "unless-stopped"
     depends_on:
       postgres:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -81,14 +61,17 @@ services:
         condition: service_completed_successfully
     command: gunicorn
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8000/version/ || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/version/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - loki
+      - shared
 
   set_state:
     <<: *base_app
-    container_name: my-game-list-set-state
+    container_name: game-list-set-state
     restart: "no"
     depends_on:
       postgres:
@@ -97,15 +80,13 @@ services:
         condition: service_healthy
     command: set_state
     volumes:
-      - static_volume:/opt/my_game_list/static
+      - static_volume:/opt/game_list/static
 
   celery_worker:
     <<: *base_app
-    container_name: my-game-list-celery-worker
+    container_name: game-list-celery-worker
     restart: "unless-stopped"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -113,14 +94,24 @@ services:
       set_state:
         condition: service_completed_successfully
     command: celery_worker
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "uv run celery -A game_list.game_list inspect ping || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - loki
+      - shared
 
   celery_beat:
     <<: *base_app
-    container_name: my-game-list-celery-beat
+    container_name: game-list-celery-beat
     restart: "unless-stopped"
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
@@ -128,10 +119,43 @@ services:
       set_state:
         condition: service_completed_successfully
     command: celery_beat
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -f /tmp/celerybeat.pid && kill -0 $(cat /tmp/celerybeat.pid) || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - loki
+      - shared
+
+  keycloak_events_consumer:
+    <<: *base_app
+    container_name: game-list-keycloak-events-consumer
+    restart: "unless-stopped"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      set_state:
+        condition: service_completed_successfully
+    command: keycloak_events_consumer
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f consume_keycloak_events || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - loki
+      - shared
 
   nginx:
-    image: ghcr.io/sojusanapps/my-game-list-backend/nginx:latest
-    container_name: my-game-list-nginx
+    image: ghcr.io/sojusanapps/game-list-backend/nginx:latest
+    container_name: game-list-nginx
     build:
       context: ./nginx
     restart: "unless-stopped"
@@ -142,15 +166,20 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - static_volume:/opt/my_game_list/static
-      - media_volume:/opt/my_game_list/media
+      - static_volume:/opt/game_list/static
+      - media_volume:/opt/game_list/media
       - ./nginx/ssl:/etc/nginx/ssl
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fk https://localhost/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
   prometheus:
-    image: prom/prometheus:v3.11.3
-    container_name: my-game-list-prometheus
+    image: prom/prometheus:v3.14.0
+    container_name: game-list-prometheus
     restart: "unless-stopped"
     ports:
       - "9090:9090"
@@ -160,12 +189,21 @@ services:
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
   grafana:
-    image: grafana/grafana:13.0.1
-    container_name: my-game-list-grafana
+    image: grafana/grafana:13.0.7
+    container_name: game-list-grafana
     restart: "unless-stopped"
     ports:
       - "3000:3000"
@@ -177,31 +215,56 @@ services:
       - prometheus
     env_file:
       - ./.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
   loki:
-    image: grafana/loki:3.7.1
-    container_name: my-game-list-loki
+    image: grafana/loki:3.7.6
+    container_name: game-list-loki
     ports:
       - "3100"
     command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
-  promtail:
-    image: grafana/promtail:3.6.10
-    container_name: my-game-list-promtail
+  alloy:
+    image: grafana/alloy:v1.18.1
+    container_name: game-list-alloy
     volumes:
-      - ./promtail/promtail.yml:/etc/promtail/promtail.yml
-      - app_log_volume:/var/log/my_game_list
-    command: -config.file=/etc/promtail/promtail.yml
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      - app_log_volume:/var/log/game_list
+    command: run /etc/alloy/config.alloy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bash",
+          "-c",
+          "exec 3<>/dev/tcp/localhost/12345 && echo -e 'GET /-/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && head -1 <&3 | grep -q '200 OK'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
   tempo:
-    image: grafana/tempo:2.10.5
-    container_name: my-game-list-tempo
+    image: grafana/tempo:3.0.3
+    container_name: game-list-tempo
     command: -config.file=/etc/tempo.yaml
     volumes:
       - ./tempo/tempo.yaml:/etc/tempo.yaml
@@ -209,6 +272,11 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
+    healthcheck:
+      test: ["CMD", "/tempo", "-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - loki
 
@@ -223,3 +291,6 @@ volumes:
 
 networks:
   loki:
+  shared:
+    name: sojusan-apps-shared-network
+    external: true

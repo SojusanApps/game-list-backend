@@ -2,10 +2,51 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.3.2] - 25.08.2026
+
+* Fixed sonar issues.
+
+## v. [5.3.1] - 25.08.2026
+
+* Renamed project from `my-game-list` to `game-list`.
+
+## v. [5.3.0] - 25.08.2026
+
+* Fixed Keycloak connection in docker.
+* Removed rabbitmq as the shared instance is now used.
+* Added `kombu` consumer for Keycloak events.
+* Added missing unit tests.
+* Fixed an issue with title update in import script.
+
+## v. [5.2.2] - 20.08.2026
+
+* Updated docker containers.
+
+## v. [5.2.1] - 20.08.2026
+
+* Added `mypy` check to `prek`.
+* Updated GitHub Actions to newest versions.
+
+## v. [5.2.0] - 19.08.2026
+
+* Added `F` tier to the `Tier` choices, for `CollectionItem`s in `TIER`-type collections.
+
+## v. [5.1.1] - 19.08.2026
+
+* Added base class for the custom errors `SojusanGameListError`.
+
+## v. [5.1.0] - 18.08.2026
+
+* Added `recommendation` field to the `GameReview`.
+
+## v. [5.0.1] - 18.08.2026
+
+* Limit users to active in users endpoints - only admins can see all.
+
 ## v. [5.0.0] - 17.08.2026
 
 * Migrated authentication from self-issued `SimpleJWT` tokens to Keycloak-issued access tokens — a hard cutover, not a dual-accept transition period.
-  * New `KeycloakAuthentication` class (`my_game_list/authentication.py`), the sole entry in `DEFAULT_AUTHENTICATION_CLASSES`, validates tokens offline against the realm's JWKS endpoint (`PyJWT`'s `PyJWKClient`, keys cached). Checks `iss` strictly against the configured realm and accepts the expected client id in either the `aud` or `azp` claim, since Keycloak doesn't reliably populate `aud` with the client id unless an audience mapper is configured.
+  * New `KeycloakAuthentication` class (`game_list/authentication.py`), the sole entry in `DEFAULT_AUTHENTICATION_CLASSES`, validates tokens offline against the realm's JWKS endpoint (`PyJWT`'s `PyJWKClient`, keys cached). Checks `iss` strictly against the configured realm and accepts the expected client id in either the `aud` or `azp` claim, since Keycloak doesn't reliably populate `aud` with the client id unless an audience mapper is configured.
   * `User` gets a new `keycloak_id` field (nullable, unique), storing the token's `sub` claim.
   * On every authenticated request, the caller is resolved to a local `User` by `keycloak_id`: a never-seen `sub` provisions a new account (`username` from the token's `nickname` claim, `email` from `email`, unusable password); a known `sub` has its `username` reconciled from the current `nickname` claim on every call, resolving a collision with another user's username via a numeric suffix. Reconciliation also regenerates `User.slug` and every owned `Collection.slug`, matching what the old change-username endpoint used to do.
   * `is_staff` is derived, on every authenticated request, from whether the token's client roles (`resource_access.<KEYCLOAK_CLIENT_ID>.roles`) include `"admin"` — present grants staff, absent revokes it, including on an account that was previously granted `is_staff` some other way (e.g. `createsuperuser`). A resolved `User` with `is_active=False` is still rejected even with an otherwise valid token, same as before.
@@ -29,7 +70,7 @@
 * Added self-service username and password change endpoints to `UserViewSet` (`/user/users/`), both self-service only (operate on `request.user`, no way to target another account) and fully documented via `@extend_schema` (correct request/response bodies instead of the ViewSet's default `User` schema).
   * `POST /change-username/` — validates the new username against the same format/uniqueness rules as registration and rejects a no-op (same-as-current) submission. Regenerates `User.slug`, and every slug of the user's owned `Collection`s, from the new username, resolving any collision with a numeric suffix. Returns the updated user (`UserDetailSerializer`).
   * `POST /change-password/` — requires the current password for re-verification, validates the new password with the same `django_validate_password` rules used at registration, and requires a matching confirmation. Returns `204 No Content`. Does not invalidate already-issued tokens on other devices.
-* Extracted a shared `generate_unique_slug` helper (`my_game_list/slugs.py`) from `Collection.save()`'s existing collision-suffixing logic, and wired it into `User.save()` too — fixing a pre-existing latent bug where `User.save()` never handled slug collisions at all (distinct valid usernames can collide once `.`/`@`/`+` are stripped and case is folded by `slugify()`).
+* Extracted a shared `generate_unique_slug` helper (`game_list/slugs.py`) from `Collection.save()`'s existing collision-suffixing logic, and wired it into `User.save()` too — fixing a pre-existing latent bug where `User.save()` never handled slug collisions at all (distinct valid usernames can collide once `.`/`@`/`+` are stripped and case is folded by `slugify()`).
 * Fixed `UserViewSet.get_authenticators()`, which was silently skipping authentication for *any* `POST` request to the viewset, not just the intended `create`/registration action — harmless while `create` was the only `POST` action, but would have left the new `change-username`/`change-password` actions open with no authentication.
 
 ## v. [4.25.0] - 10.07.2026
@@ -101,7 +142,7 @@
 ## v. [4.20.2] - 19.06.2026
 
 * Replaced manual Docker test setup with `testcontainers`.
-  * Removed shell scripts `my-game-list-run-tests.sh`, `my-game-list-run-tests-with-pg.sh`, `wait-for-postgresql.py`, and `colors.sh`.
+  * Removed shell scripts `game-list-run-tests.sh`, `game-list-run-tests-with-pg.sh`, `wait-for-postgresql.py`, and `colors.sh`.
   * Added `django_db_setup` fixture in `tests/conftest.py` that automatically starts a PostgreSQL container per test worker and runs migrations.
   * Updated `settings/test.py` with a placeholder `DATABASES` config (overridden at runtime by testcontainers).
   * Updated `tox.ini` to call `pytest` directly without shell script wrappers.
@@ -300,7 +341,7 @@
 * Update Docker files to be compatible with uv package manager.
 * Divided the tox commands into separate envs.
 * Added [typer](https://github.com/fastapi/typer) for command line interface.
-  * Changed `my-game-list-build.py` script to use `typer`.
+  * Changed `game-list-build.py` script to use `typer`.
 * Updated the GitHub Action configuration to work with uv.
 * Upgraded PostgreSQL version to `18.0`.
 * Changed the GitHub Action to use commit SHA instead of tags.
@@ -348,7 +389,7 @@
 * Removed the `avatar` field from the `User` model.
 * For avatars now will be used `Gravatar`.
 * Removed the `FileSizeValidator` as it is no longer needed.
-* Removed the environment variable `MGL_LIMIT_FILE_SIZE` as it is no longer needed.
+* Removed the environment variable `GL_LIMIT_FILE_SIZE` as it is no longer needed.
 
 ## v. [4.0.0] - 10.09.2024
 
