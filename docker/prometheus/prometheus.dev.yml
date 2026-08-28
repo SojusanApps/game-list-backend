@@ -10,9 +10,9 @@ scrape_configs:
       insecure_skip_verify: true
     static_configs:
       - targets:
-          - "app:8000"
+          - "nginx:80"
 
   - job_name: rabbitmq
     static_configs:
       - targets:
-          - "10.8.0.1:15672"
+          - "rabbitmq:15672"

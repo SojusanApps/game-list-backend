@@ -15,7 +15,7 @@ case "$1" in
         uv run celery -A game_list.game_list beat -l info --pidfile=/tmp/celerybeat.pid
     ;;
     keycloak_events_consumer)
-        uv run django-admin consume_keycloak_events
+        exec uv run django-admin consume_keycloak_events
     ;;
     *)
         exec "$@"
