@@ -9,7 +9,11 @@ class FriendshipFilterSet(filters.FilterSet):
     """FilterSet for friendship model."""
 
     user = filters.NumberFilter(field_name="user__id")
-    friend__username = filters.CharFilter(field_name="friend__username", lookup_expr="icontains")
+    friend__username = filters.CharFilter(
+        field_name="friend__username",
+        lookup_expr="icontains",
+        help_text="Filter friendships by the friend's username (case-insensitive, partial match).",
+    )
 
     class Meta:
         """Meta class for friendship filter set."""

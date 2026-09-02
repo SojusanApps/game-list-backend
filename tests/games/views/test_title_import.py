@@ -34,7 +34,7 @@ def test_title_import_requires_authentication(api_client: APIClient) -> None:
 
 @pytest.mark.django_db()
 def test_title_import_matches_title_to_game(api_client: APIClient, user_fixture: UserModel) -> None:
-    """A matched title returns the game's id, title and cover_image_id."""
+    """A matched title returns the game's id, title, cover_image_id and release_date."""
     game = baker.make(Game, title_en="Half-Life", title_pl="Half-Life", cover_image_id="co1xyz")
     api_client.force_authenticate(user=user_fixture)
 
@@ -45,7 +45,13 @@ def test_title_import_matches_title_to_game(api_client: APIClient, user_fixture:
     assert len(results) == 1
     assert results[0]["title"] == "half life"
     assert results[0]["matches"] == [
-        {"id": game.pk, "title": "Half-Life", "cover_image_id": "co1xyz", "already_in_list": False},
+        {
+            "id": game.pk,
+            "title": "Half-Life",
+            "cover_image_id": "co1xyz",
+            "release_date": None,
+            "already_in_list": False,
+        },
     ]
 
 
@@ -120,7 +126,13 @@ def test_title_import_flags_games_already_in_list(api_client: APIClient, user_fi
     assert response.status_code == status.HTTP_200_OK
     matches = response.json()["results"][0]["matches"]
     assert matches == [
-        {"id": owned.pk, "title": "Hades", "cover_image_id": owned.cover_image_id, "already_in_list": True},
+        {
+            "id": owned.pk,
+            "title": "Hades",
+            "cover_image_id": owned.cover_image_id,
+            "release_date": None,
+            "already_in_list": True,
+        },
     ]
 
 
