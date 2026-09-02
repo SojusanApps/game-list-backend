@@ -501,6 +501,10 @@ class TitleImportMatchSerializer(serializers.Serializer[Any]):
     already_in_list = serializers.BooleanField(
         help_text="Whether the matched game is already on the requesting user's game list.",
     )
+    release_date = serializers.DateField(
+        allow_null=True,
+        help_text="The worldwide release date of the game.",
+    )
 
 
 class TitleImportResultSerializer(serializers.Serializer[Any]):

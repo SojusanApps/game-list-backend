@@ -2,6 +2,12 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.3.3] - 02.09.2026
+
+* Added `friend__username` filter to the Friendship model.
+* Added `release_date` to the title_import results.
+* Added missing translations `locale` to the `setuptools` package data.
+
 ## v. [5.3.2] - 25.08.2026
 
 * Fixed sonar issues.

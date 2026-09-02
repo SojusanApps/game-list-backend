@@ -62,6 +62,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = { attr = "game_list.__version__" }
 
+[tool.setuptools.package-data]
+game_list = ["py.typed", "locale/*/LC_MESSAGES/*.mo", "locale/*/LC_MESSAGES/*.po"]
+
 [project.optional-dependencies]
 test = [
     "pytest==9.1.1",
