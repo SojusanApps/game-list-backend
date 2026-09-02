@@ -517,6 +517,7 @@ class GameListViewSet(ModelViewSet[GameList]):
                         "title": games[pk].title,
                         "cover_image_id": games[pk].cover_image_id,
                         "already_in_list": pk in user_game_ids,
+                        "release_date": games[pk].release_date,
                     }
                     for pk in pks
                 ],
