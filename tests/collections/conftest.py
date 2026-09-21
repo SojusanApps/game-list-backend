@@ -33,7 +33,6 @@ def collection_fixture(user_fixture: UserModel) -> Collection:
     return Collection.objects.create(
         name="Test Collection",
         description="A test collection for testing.",
-        is_favorite=False,
         visibility=CollectionVisibility.PRIVATE,
         mode=CollectionMode.SOLO,
         user=user_fixture,
@@ -47,7 +46,6 @@ def public_collection_fixture(user_fixture: UserModel) -> Collection:
     return Collection.objects.create(
         name="Public Test Collection",
         description="A public test collection.",
-        is_favorite=True,
         visibility=CollectionVisibility.PUBLIC,
         mode=CollectionMode.SOLO,
         user=user_fixture,
@@ -61,7 +59,6 @@ def collaborative_collection_fixture(user_fixture: UserModel) -> Collection:
     return Collection.objects.create(
         name="Collaborative Collection",
         description="A collaborative test collection.",
-        is_favorite=False,
         visibility=CollectionVisibility.FRIENDS,
         mode=CollectionMode.COLLABORATIVE,
         user=user_fixture,

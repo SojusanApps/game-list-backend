@@ -100,10 +100,6 @@ msgstr "nazwa"
 msgid "description"
 msgstr "opis"
 
-#: src/game_list/collections/models.py:64
-msgid "is favorite"
-msgstr "jest ulubioną"
-
 #: src/game_list/collections/models.py:69
 #: src/game_list/collections/models.py:170 src/game_list/games/models.py:179
 #: src/game_list/games/models.py:263 src/game_list/games/models.py:557
@@ -159,6 +155,14 @@ msgstr "kolekcja"
 #: src/game_list/collections/models.py:123
 msgid "collections"
 msgstr "kolekcje"
+
+#: src/game_list/collections/models.py:170
+msgid "collection favorite"
+msgstr "ulubiona kolekcja"
+
+#: src/game_list/collections/models.py:171
+msgid "collection favorites"
+msgstr "ulubione kolekcje"
 
 #: src/game_list/collections/models.py:148
 msgid "order"
