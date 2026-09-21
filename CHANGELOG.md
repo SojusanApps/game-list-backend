@@ -2,6 +2,10 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.4.0] - 21.09.2026
+
+* Added ordering of the game list by the owner's score and by game title (`ordering=score`, `-score`, `title`, `-title`, or a comma-separated combination). Unscored entries always come last, and ties are ordered by game title and then by ID.
+
 ## v. [5.3.3] - 02.09.2026
 
 * Added `friend__username` filter to the Friendship model.

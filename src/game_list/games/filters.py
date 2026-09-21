@@ -2,8 +2,10 @@
 
 from typing import Any
 
-from django.db.models import Q, QuerySet
+from django.db.models import F, Q, QuerySet, Value
+from django.db.models.functions import Coalesce, NullIf
 from django_filters import rest_framework as filters
+from modeltranslation.utils import build_localized_fieldname, get_language
 
 from game_list.game_list.filters import BaseLookupFilterSet, BilingualModelMultipleChoiceFilter
 from game_list.games.models import (
@@ -53,6 +55,16 @@ class GameFollowFilterSet(filters.FilterSet):
             "game",
             "user",
         )
+
+
+def _game_title_sort_key() -> Coalesce:
+    """Return the related game's title in the active language, falling back to English when it is blank.
+
+    `GameList` querysets aren't rewritten by modeltranslation, so the language column is picked explicitly.
+    This mirrors what `Game.title` resolves to in the serializer.
+    """
+    localized_title = F(f"game__{build_localized_fieldname('title', get_language())}")
+    return Coalesce(NullIf(localized_title, Value("")), F("game__title_en"))
 
 
 class GameListFilterSet(filters.FilterSet):
@@ -118,6 +130,27 @@ class GameListFilterSet(filters.FilterSet):
         return queryset.filter(
             Q(game__developer__name_en__icontains=value) | Q(game__developer__name_pl__icontains=value),
         )
+
+    ordering = filters.OrderingFilter(
+        fields=(("score", "score"), ("title", "title")),
+        method="filter_ordering",
+    )
+
+    def filter_ordering(self, queryset: QuerySet[Any], _name: str, value: list[str]) -> QuerySet[Any]:
+        """Order by the requested `score` and/or `title` keys, in the order given.
+
+        Unscored entries always come last, whatever the score direction. Unless `title` is itself requested, ties are
+        broken by game title A-Z; `id` is always the last key, so pages stay stable. An explicit ordering replaces
+        the best-match-first order of the `title` filter.
+        """
+        sort_keys: dict[str, F | Coalesce] = {"score": F("score"), "title": _game_title_sort_key()}
+        ordering = []
+        for term in value:
+            key = sort_keys[term.removeprefix("-")]
+            ordering.append(key.desc(nulls_last=True) if term.startswith("-") else key.asc(nulls_last=True))
+        if not any(term.removeprefix("-") == "title" for term in value):
+            ordering.append(sort_keys["title"].asc())
+        return queryset.order_by(*ordering, "id")
 
     class Meta:
         """Meta class for game list filter set."""

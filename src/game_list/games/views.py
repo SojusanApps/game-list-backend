@@ -225,7 +225,8 @@ class GameFollowViewSet(
             "List game-list entries. Open to anonymous visitors as well as authenticated users. "
             "Each entry tracks a user's relationship to a game including the play status "
             "(e.g. Playing, Completed, Plan to Play). "
-            "Filter by status, game ID, user ID, or any game attribute."
+            "Filter by status, game ID, user ID, or any game attribute. "
+            "Entries can be ordered by the owner's score or by game title using the `ordering` parameter."
         ),
         parameters=[
             OpenApiParameter(
@@ -303,6 +304,18 @@ class GameFollowViewSet(
                 name="external_games",
                 description="Filter by external game source (English or Polish). Can be specified multiple times.",
                 many=True,
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description=(
+                    "Order results by the owner's score or by game title (in the requested language, "
+                    "falling back to English). "
+                    "Accepted values: score, -score, title, -title. Prefix with '-' for descending. "
+                    "Several values can be combined with commas, e.g. `-score,title`. "
+                    "Unscored entries always come last when ordering by score. "
+                    "Ties are ordered by game title A-Z (unless title is already requested), then by ID. "
+                    "An explicit ordering replaces the best-match-first order of the `title` filter."
+                ),
             ),
         ],
     ),
