@@ -141,6 +141,7 @@ class GameListStatus(models.TextChoices):
     PLAYING = "P", _("Playing")
     DROPPED = "D", _("Dropped")
     ON_HOLD = "OH", _("On hold")
+    NOT_PLANNED = "NP", _("Not planned")
 
 
 class GameMedia(BaseLookupModel):
@@ -167,7 +168,7 @@ class GameList(BaseModel):
         _("status"),
         max_length=3,
         choices=GameListStatus.choices,
-        help_text="The user's current play status (Completed, Plan to Play, Playing, Dropped, On Hold).",
+        help_text="The user's current play status (Completed, Plan to Play, Playing, Dropped, On Hold, Not Planned).",
     )
     description = models.CharField(
         _("description"),

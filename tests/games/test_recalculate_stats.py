@@ -46,6 +46,23 @@ def test_recalculate_stats_computes_aggregate_math_from_gamelist_scores() -> Non
 
 
 @pytest.mark.django_db()
+def test_recalculate_stats_counts_not_planned_entries() -> None:
+    """A Not planned entry's score still counts toward score_sum/score_count/members_count (ADR-0020)."""
+    game = baker.make(Game)
+    baker.make(GameList, game=game, score=10, status=GameListStatus.COMPLETED, _quantity=1)
+    baker.make(GameList, game=game, score=4, status=GameListStatus.NOT_PLANNED, _quantity=1)
+    GameStats.objects.filter(game=game).update(score_sum=0, score_count=0, average_score=0, members_count=0)
+
+    call_command("recalculate_stats")
+
+    stats = GameStats.objects.get(game=game)
+    assert stats.score_sum == 14  # noqa: PLR2004
+    assert stats.score_count == 2  # noqa: PLR2004
+    assert stats.average_score == Decimal("7.00")
+    assert stats.members_count == 2  # noqa: PLR2004
+
+
+@pytest.mark.django_db()
 def test_recalculate_stats_resets_to_zero_when_no_gamelist_entries() -> None:
     """A game with stale nonzero GameStats but no GameList entries gets reset to zero."""
     game = baker.make(Game)

@@ -9,6 +9,8 @@ from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
+from game_list.games.models import Game, GameList, GameListStatus
+
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
 
@@ -173,9 +175,29 @@ def test_get_user(authenticated_api_client: APIClient) -> None:
             "on_hold": 0,
             "plan_to_play": 0,
             "playing": 0,
+            "not_planned": 0,
             "total": 0,
         },
     }
+
+
+@pytest.mark.django_db()
+def test_get_user_game_list_statistics_counts_not_planned(
+    authenticated_api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """The not_planned status is counted in its own breakdown key, separate from the other statuses."""
+    baker.make(GameList, user=user_fixture, game=baker.make(Game), status=GameListStatus.NOT_PLANNED, score=None)
+    baker.make(GameList, user=user_fixture, game=baker.make(Game), status=GameListStatus.NOT_PLANNED, score=None)
+    baker.make(GameList, user=user_fixture, game=baker.make(Game), status=GameListStatus.COMPLETED, score=8)
+
+    response = authenticated_api_client.get(reverse("users:users-detail", (user_fixture.pk,)))
+
+    assert response.status_code == status.HTTP_200_OK
+    statistics = response.json()["game_list_statistics"]
+    assert statistics["not_planned"] == 2  # noqa: PLR2004
+    assert statistics["completed"] == 1
+    assert statistics["total"] == 3  # noqa: PLR2004
 
 
 @pytest.mark.django_db()
