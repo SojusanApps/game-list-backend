@@ -25,6 +25,7 @@ from game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    ReviewLanguage,
     TranslationSuggestion,
 )
 from game_list.games.search import filter_queryset_by_title
@@ -182,6 +183,7 @@ class GameReviewFilterSet(filters.FilterSet):
     game = filters.NumberFilter(field_name="game__id")
     user = filters.NumberFilter(field_name="user__id")
     recommendation = filters.ChoiceFilter(choices=GameReviewRecommendation.choices)
+    language = filters.ChoiceFilter(choices=ReviewLanguage.choices)
 
     class Meta:
         """Meta class for game review filter set."""
@@ -193,6 +195,7 @@ class GameReviewFilterSet(filters.FilterSet):
             "game",
             "user",
             "recommendation",
+            "language",
         )
 
 

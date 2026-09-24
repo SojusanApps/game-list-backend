@@ -242,10 +242,18 @@ class GameReviewRecommendation(models.TextChoices):
     UNDECIDED = "undecided", _("Undecided")
 
 
+class ReviewLanguage(models.TextChoices):
+    """The language a review is written in."""
+
+    ENGLISH = "en", _("English")
+    POLISH = "pl", _("Polish")
+
+
 class GameReview(BaseModel):
     """Contains reviews for games."""
 
     Recommendation = GameReviewRecommendation
+    Language = ReviewLanguage
 
     created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
     review = models.TextField(
@@ -259,6 +267,12 @@ class GameReview(BaseModel):
         max_length=16,
         choices=GameReviewRecommendation.choices,
         help_text="Whether the reviewer recommends this game (Recommended, Not Recommended, Undecided).",
+    )
+    language = models.CharField(
+        _("language"),
+        max_length=2,
+        choices=ReviewLanguage.choices,
+        help_text="The language the review text is written in (English, Polish).",
     )
     is_moderated = models.BooleanField(
         _("is moderated"),

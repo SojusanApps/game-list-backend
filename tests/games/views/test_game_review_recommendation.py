@@ -6,7 +6,7 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from game_list.games.models import GameReview, GameReviewRecommendation
+from game_list.games.models import GameReview, GameReviewRecommendation, ReviewLanguage
 
 if TYPE_CHECKING:
     from rest_framework.test import APIClient
@@ -61,12 +61,14 @@ def test_list_filters_by_recommendation(
         game=game_fixture,
         user=user_fixture,
         recommendation=GameReviewRecommendation.RECOMMENDED,
+        language=ReviewLanguage.ENGLISH,
     )
     other_user: UserModel = user_fixture.__class__.objects.create(username="other", email="other@email.com")
     GameReview.objects.create(
         game=game_fixture,
         user=other_user,
         recommendation=GameReviewRecommendation.NOT_RECOMMENDED,
+        language=ReviewLanguage.ENGLISH,
     )
 
     response = authenticated_api_client.get(
@@ -91,11 +93,13 @@ def test_recommendation_counts_present_only_when_filtered_by_game(
         game=game_fixture,
         user=user_fixture,
         recommendation=GameReviewRecommendation.RECOMMENDED,
+        language=ReviewLanguage.ENGLISH,
     )
     GameReview.objects.create(
         game=game_fixture,
         user=other_user,
         recommendation=GameReviewRecommendation.RECOMMENDED,
+        language=ReviewLanguage.ENGLISH,
     )
 
     unfiltered_response = authenticated_api_client.get(reverse("games:game-reviews-list"))
@@ -120,6 +124,7 @@ def test_recommendation_counts_ignore_the_recommendation_filter_itself(
         game=game_fixture,
         user=user_fixture,
         recommendation=GameReviewRecommendation.UNDECIDED,
+        language=ReviewLanguage.ENGLISH,
     )
 
     response = authenticated_api_client.get(
