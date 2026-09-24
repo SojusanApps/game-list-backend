@@ -6,7 +6,14 @@ import pytest
 from django.db import IntegrityError
 from model_bakery import baker
 
-from game_list.collections.models import Collection, CollectionItem, CollectionMode, CollectionVisibility, Tier
+from game_list.collections.models import (
+    Collection,
+    CollectionFavorite,
+    CollectionItem,
+    CollectionMode,
+    CollectionVisibility,
+    Tier,
+)
 
 if TYPE_CHECKING:
     from game_list.games.models import Game
@@ -17,6 +24,22 @@ if TYPE_CHECKING:
 def test_collection_dunder_str(collection_fixture: Collection) -> None:
     """Test the `Collection` dunder str method."""
     assert str(collection_fixture) == f"{collection_fixture.user.username} - {collection_fixture.name}"
+
+
+@pytest.mark.django_db()
+def test_collection_favorite_dunder_str(collection_fixture: Collection, admin_user_fixture: UserModel) -> None:
+    """Test the `CollectionFavorite` dunder str method."""
+    favorite = CollectionFavorite.objects.create(collection=collection_fixture, user=admin_user_fixture)
+    assert str(favorite) == f"{admin_user_fixture.username} - {collection_fixture.name}"
+
+
+@pytest.mark.django_db()
+def test_collection_favorite_unique_constraint(collection_fixture: Collection, admin_user_fixture: UserModel) -> None:
+    """Test that a user can favorite a given collection only once."""
+    CollectionFavorite.objects.create(collection=collection_fixture, user=admin_user_fixture)
+
+    with pytest.raises(IntegrityError):
+        CollectionFavorite.objects.create(collection=collection_fixture, user=admin_user_fixture)
 
 
 @pytest.mark.django_db()
@@ -59,7 +82,6 @@ def test_tier_choices() -> None:
 @pytest.mark.django_db()
 def test_collection_default_values(collection_fixture: Collection) -> None:
     """Test that Collection has expected default values."""
-    assert collection_fixture.is_favorite is False
     assert collection_fixture.visibility == CollectionVisibility.PRIVATE
     assert collection_fixture.mode == CollectionMode.SOLO
 

@@ -585,14 +585,14 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
         if not collector.all_target_igdb_ids:
             return
 
-        self.stdout.write(self.style.NOTICE("Fetching game ID mapping..."))
+        self.stdout.write("Fetching game ID mapping...")
 
         game_map = {
             item[1]: item[0]
             for item in Game.objects.filter(igdb_id__in=collector.all_target_igdb_ids).values_list("id", "igdb_id")
         }
 
-        self.stdout.write(self.style.NOTICE("Game parents update - started."))
+        self.stdout.write("Game parents update - started.")
 
         to_update_parent = []
         for game_id, parent_igdb_id in collector.parent_updates:
@@ -603,10 +603,10 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
             # Using a sensible batch_size for bulk_update
             Game.objects.bulk_update(to_update_parent, ["parent_game"], batch_size=2000)
 
-        self.stdout.write(self.style.NOTICE("Game parents update - finished."))
+        self.stdout.write("Game parents update - finished.")
 
         for field, data in collector.recursive_m2m_data.items():
-            self.stdout.write(self.style.NOTICE(f"Game {field} m2m relations - started."))
+            self.stdout.write(f"Game {field} m2m relations - started.")
             m2m_model = getattr(Game, field).through
             m2m_objs = [
                 m2m_model(from_game_id=src_id, to_game_id=game_map[tgt_igdb_id])
@@ -617,7 +617,7 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
                 # Using a sensible batch_size for bulk_create
                 m2m_model.objects.bulk_create(m2m_objs, ignore_conflicts=True, batch_size=2000)
 
-            self.stdout.write(self.style.NOTICE(f"Game {field} m2m relations - finished."))
+            self.stdout.write(f"Game {field} m2m relations - finished.")
 
     def import_companies(self: Self, *, import_all: bool = False, import_start_timestamp: int | None = None) -> None:
         """Import companies from the IGDB database to the application database."""

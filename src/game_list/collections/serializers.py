@@ -105,6 +105,10 @@ class CollectionSerializer(serializers.ModelSerializer[Collection]):
     items_cover_image_ids = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
+    is_favorite = serializers.BooleanField(
+        read_only=True,
+        help_text="Whether the requesting user has favorited the collection. Always false for anonymous visitors.",
+    )
 
     class Meta:
         """Meta data for the collection serializer."""
@@ -207,7 +211,6 @@ class CollectionCreateSerializer(serializers.ModelSerializer[Collection]):
             "id",
             "name",
             "description",
-            "is_favorite",
             "visibility",
             "mode",
             "type",

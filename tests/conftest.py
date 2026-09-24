@@ -13,7 +13,8 @@ from django.core.management import call_command
 from freezegun import freeze_time
 from model_bakery import baker
 from rest_framework.test import APIClient
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
+from testcontainers.core.container import Reaper
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -48,6 +49,9 @@ def django_db_setup(
         with django_db_blocker.unblock():
             call_command("migrate")
         yield
+    # Stop Ryuk now, while pytest's output streams are still open. Left to testcontainers' atexit hook,
+    # the teardown logs from docker/urllib3 hit already-closed streams and spam "--- Logging error ---".
+    Reaper.delete_instance()
 
 
 @pytest.fixture

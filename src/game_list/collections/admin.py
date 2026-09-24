@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from game_list.collections.models import Collection, CollectionItem
+from game_list.collections.models import Collection, CollectionFavorite, CollectionItem
 
 
 class CollectionItemInline(admin.TabularInline[CollectionItem, Collection]):
@@ -21,8 +21,8 @@ class CollectionAdmin(admin.ModelAdmin[Collection]):
     readonly_fields = ("id", "created_at", "last_modified_at")
     search_fields = ("id", "name", "user__username")
     raw_id_fields = ("user",)
-    list_filter = ("visibility", "mode", "is_favorite", "created_at", "last_modified_at")
-    list_display = ("id", "name", "user", "visibility", "mode", "is_favorite", "created_at")
+    list_filter = ("visibility", "mode", "created_at", "last_modified_at")
+    list_display = ("id", "name", "user", "visibility", "mode", "created_at")
     filter_horizontal = ("collaborators",)
     inlines = (CollectionItemInline,)
 
@@ -36,3 +36,14 @@ class CollectionItemAdmin(admin.ModelAdmin[CollectionItem]):
     raw_id_fields = ("collection", "game", "added_by")
     list_filter = ("tier", "created_at", "last_modified_at")
     list_display = ("id", "collection", "game", "order", "tier", "added_by", "created_at")
+
+
+@admin.register(CollectionFavorite)
+class CollectionFavoriteAdmin(admin.ModelAdmin[CollectionFavorite]):
+    """Admin model for the collection favorite model."""
+
+    readonly_fields = ("id", "created_at")
+    search_fields = ("id", "collection__name", "user__username")
+    raw_id_fields = ("collection", "user")
+    list_filter = ("created_at",)
+    list_display = ("id", "collection", "user", "created_at")

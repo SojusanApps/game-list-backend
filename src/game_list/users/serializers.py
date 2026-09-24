@@ -197,6 +197,7 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
                 "plan_to_play": serializers.IntegerField(),
                 "on_hold": serializers.IntegerField(),
                 "playing": serializers.IntegerField(),
+                "not_planned": serializers.IntegerField(),
                 "total": serializers.IntegerField(),
                 "mean_score": serializers.FloatField(),
             },
@@ -210,6 +211,7 @@ class UserDetailSerializer(serializers.ModelSerializer[UserModel]):
             "plan_to_play": instance.game_lists.filter(status=GameListStatus.PLAN_TO_PLAY).count(),
             "on_hold": instance.game_lists.filter(status=GameListStatus.ON_HOLD).count(),
             "playing": instance.game_lists.filter(status=GameListStatus.PLAYING).count(),
+            "not_planned": instance.game_lists.filter(status=GameListStatus.NOT_PLANNED).count(),
             "total": instance.game_lists.count(),
             "mean_score": instance.game_lists.aggregate(mean_score=Avg("score"))["mean_score"],
         }
