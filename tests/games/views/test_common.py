@@ -343,6 +343,7 @@ def test_game_follow_list_stays_authenticated_only(
                         "user": ANY,
                         "score": None,
                         "recommendation": GameReviewRecommendation.RECOMMENDED.value,
+                        "language": "en",
                         "review": "test_review",
                         "created_at": "2023-06-22T16:47:12Z",
                     },
@@ -418,10 +419,14 @@ def test_game_follow_list_stays_authenticated_only(
             "games:game-medias-list",
             "game_media_fixture",
             {
-                "count": 6,
+                "count": 7,
                 "next": None,
                 "previous": None,
                 "results": [
+                    {
+                        "id": ANY,
+                        "name": ANY,
+                    },
                     {
                         "id": ANY,
                         "name": ANY,
@@ -638,6 +643,7 @@ def test_list_model(
                 "review": "test_review",
                 "score": None,
                 "recommendation": GameReviewRecommendation.RECOMMENDED.value,
+                "language": "en",
                 "created_at": "2023-06-22T16:47:12Z",
             },
             id="Get the game review by id.",
@@ -861,6 +867,7 @@ def test_get_model_detail(
             {
                 "review": "test review - new",
                 "recommendation": GameReviewRecommendation.RECOMMENDED.value,
+                "language": "pl",
             },
             {
                 "id": ANY,
@@ -947,6 +954,7 @@ def test_create_model(
             {
                 "review": "Updated review.",
                 "recommendation": GameReviewRecommendation.NOT_RECOMMENDED.value,
+                "language": "pl",
             },
             {
                 "created_at": "2023-06-22T16:47:12Z",
@@ -1024,7 +1032,7 @@ def test_game_follow_update_not_allowed(
         pytest.param(
             "games:game-medias-detail",
             "game_media_fixture",
-            5,
+            6,
             "admin_authenticated_api_client",
             id="Delete the game media.",
         ),

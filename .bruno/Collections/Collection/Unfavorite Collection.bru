@@ -1,0 +1,16 @@
+meta {
+  name: Unfavorite Collection
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{protocol}}/{{host}}:{{port}}/api/collection/collections/1/favorite/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}

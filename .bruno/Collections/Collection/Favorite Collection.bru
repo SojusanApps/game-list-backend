@@ -1,0 +1,16 @@
+meta {
+  name: Favorite Collection
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{protocol}}/{{host}}:{{port}}/api/collection/collections/1/favorite/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}

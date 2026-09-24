@@ -2,6 +2,18 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [5.4.0] - 24.09.2026
+
+* Added ordering of the game list by the owner's score and by game title (`ordering=score`, `-score`, `title`, `-title`, or a comma-separated combination). Unscored entries always come last, and ties are ordered by game title and then by ID.
+* Fixed the IGDB import script printing progress messages in red, which is now reserved for errors.
+* [BREAKING] Made collection favorites per user. `is_favorite` used to be a single flag set by the owner and shown to everyone; it is now each viewer's own favorite and is read-only in responses (always `false` for anonymous visitors). The `is_favorite` field is no longer accepted when creating or updating a collection; use the new `POST /collections/{id}/favorite/` and `DELETE /collections/{id}/favorite/` endpoints, open to any authenticated user who can see the collection.
+* The `is_favorite` collection filter now means "favorited by me".
+* Existing favorites are migrated to their owners; collaborators and other viewers start with none.
+* Added `CollectionFavorite` to the Django admin, replacing the removed `is_favorite` column and filter on collections.
+* Added a `Not planned` game list status for games the user has added but doesn't intend to play. Counted in its own `not_planned` key in `game_list_statistics`.
+* Added `Xbox` to the `GameMedia` initial data.
+* [BREAKING] Added a mandatory `language` field (`en` or `pl`) to game reviews, set by the reviewer and editable afterwards; creating or fully updating a review without it is rejected. Existing reviews are migrated to `en`. Reviews can be filtered with `?language=en|pl`, and all languages are returned when the filter is omitted.
+
 ## v. [5.3.3] - 02.09.2026
 
 * Added `friend__username` filter to the Friendship model.

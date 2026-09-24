@@ -160,6 +160,7 @@ def game_review_fixture(user_fixture: UserModel, game_fixture: Game) -> GameRevi
     return GameReview.objects.create(
         review="test_review",
         recommendation=GameReview.Recommendation.RECOMMENDED,
+        language=GameReview.Language.ENGLISH,
         game=game_fixture,
         user=user_fixture,
     )

@@ -52,6 +52,7 @@ def test_banned_user_can_still_create_a_review(
             "game": game_fixture.id,
             "review": "a review from a banned user",
             "recommendation": "recommended",
+            "language": "en",
             "user": user_fixture.id,
         },
         format="json",

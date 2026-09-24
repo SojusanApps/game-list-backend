@@ -62,7 +62,7 @@ class GameReviewAdmin(admin.ModelAdmin[GameReview]):
     readonly_fields = ("id",)
     search_fields = (*readonly_fields, "game__title_en", "game__title_pl", "user__username")
     raw_id_fields = ("game", "user")
-    list_filter = ("created_at",)
+    list_filter = ("created_at", "language")
     list_display = (*readonly_fields, *list_filter, *raw_id_fields)
 
 

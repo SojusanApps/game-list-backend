@@ -141,6 +141,7 @@ class GameListStatus(models.TextChoices):
     PLAYING = "P", _("Playing")
     DROPPED = "D", _("Dropped")
     ON_HOLD = "OH", _("On hold")
+    NOT_PLANNED = "NP", _("Not planned")
 
 
 class GameMedia(BaseLookupModel):
@@ -167,7 +168,7 @@ class GameList(BaseModel):
         _("status"),
         max_length=3,
         choices=GameListStatus.choices,
-        help_text="The user's current play status (Completed, Plan to Play, Playing, Dropped, On Hold).",
+        help_text="The user's current play status (Completed, Plan to Play, Playing, Dropped, On Hold, Not Planned).",
     )
     description = models.CharField(
         _("description"),
@@ -241,10 +242,18 @@ class GameReviewRecommendation(models.TextChoices):
     UNDECIDED = "undecided", _("Undecided")
 
 
+class ReviewLanguage(models.TextChoices):
+    """The language a review is written in."""
+
+    ENGLISH = "en", _("English")
+    POLISH = "pl", _("Polish")
+
+
 class GameReview(BaseModel):
     """Contains reviews for games."""
 
     Recommendation = GameReviewRecommendation
+    Language = ReviewLanguage
 
     created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
     review = models.TextField(
@@ -258,6 +267,12 @@ class GameReview(BaseModel):
         max_length=16,
         choices=GameReviewRecommendation.choices,
         help_text="Whether the reviewer recommends this game (Recommended, Not Recommended, Undecided).",
+    )
+    language = models.CharField(
+        _("language"),
+        max_length=2,
+        choices=ReviewLanguage.choices,
+        help_text="The language the review text is written in (English, Polish).",
     )
     is_moderated = models.BooleanField(
         _("is moderated"),

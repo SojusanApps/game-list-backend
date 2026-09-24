@@ -9,6 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from game_list.game_list.models import BaseModel
 from game_list.game_list.slugs import generate_unique_slug
 
+_CREATION_TIME_LABEL = _("creation time")
+
 
 class CollectionVisibility(models.TextChoices):
     """Visibility options for collections."""
@@ -60,11 +62,6 @@ class Collection(BaseModel):
         max_length=1000,
         help_text="An optional description of the collection.",
     )
-    is_favorite = models.BooleanField(
-        _("is favorite"),
-        default=False,
-        help_text="Whether the collection is marked as a favorite by its owner.",
-    )
     is_moderated = models.BooleanField(
         _("is moderated"),
         default=False,
@@ -91,7 +88,7 @@ class Collection(BaseModel):
         default=CollectionType.NORMAL,
         help_text="Collection type: NORMAL, RANK (ordered ranking), or TIER (tier list).",
     )
-    created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
+    created_at = models.DateTimeField(_CREATION_TIME_LABEL, auto_now_add=True)
     last_modified_at = models.DateTimeField(_("last modified"), auto_now=True)
     slug = models.SlugField(
         _("slug"),
@@ -137,6 +134,43 @@ class Collection(BaseModel):
         super().save(*args, **kwargs)
 
 
+class CollectionFavorite(BaseModel):
+    """A model representing a user's private bookmark on a collection.
+
+    Favorites belong to the user, not to the collection: each user who can see a collection
+    can favorite it independently of the owner and every other viewer.
+    """
+
+    created_at = models.DateTimeField(_CREATION_TIME_LABEL, auto_now_add=True)
+
+    collection = models.ForeignKey(
+        Collection,
+        on_delete=models.CASCADE,
+        related_name="favorites",
+        verbose_name=_("collection"),
+        help_text="The collection that was favorited.",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favorite_collections",
+        help_text="The user who favorited the collection.",
+    )
+
+    class Meta(BaseModel.Meta):
+        """Meta data for the collection favorite model."""
+
+        verbose_name = _("collection favorite")
+        verbose_name_plural = _("collection favorites")
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(fields=("collection", "user"), name="unique_collection_user_favorite"),
+        ]
+
+    def __str__(self: Self) -> str:
+        """String representation of the collection favorite model."""
+        return f"{self.user.username} - {self.collection.name}"
+
+
 class CollectionItem(BaseModel):
     """A model representing a game within a collection.
 
@@ -171,7 +205,7 @@ class CollectionItem(BaseModel):
         default=False,
         help_text="Whether an accepted Report has flagged this item's note for masking.",
     )
-    created_at = models.DateTimeField(_("creation time"), auto_now_add=True)
+    created_at = models.DateTimeField(_CREATION_TIME_LABEL, auto_now_add=True)
     last_modified_at = models.DateTimeField(_("last modified"), auto_now=True)
 
     collection = models.ForeignKey(

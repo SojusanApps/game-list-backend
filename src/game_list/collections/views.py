@@ -1,9 +1,9 @@
 """This module contains the viewsets for the collection related data."""
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, cast
 
-from django.db.models import F, Max, Q
+from django.db.models import BooleanField, Exists, F, Max, OuterRef, Q, Value
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
@@ -16,7 +16,13 @@ from rest_framework.serializers import CharField, DecimalField
 from rest_framework.viewsets import ModelViewSet
 
 from game_list.collections.filters import CollectionFilterSet, CollectionItemFilterSet
-from game_list.collections.models import Collection, CollectionItem, CollectionMode, CollectionVisibility
+from game_list.collections.models import (
+    Collection,
+    CollectionFavorite,
+    CollectionItem,
+    CollectionMode,
+    CollectionVisibility,
+)
 from game_list.collections.permissions import (
     CollectionItemPermission,
     CollectionPermission,
@@ -38,6 +44,8 @@ if TYPE_CHECKING:
     from django.db.models import QuerySet
     from rest_framework.request import Request
 
+    from game_list.users.models import User
+
 
 @extend_schema_view(
     list=extend_schema(
@@ -45,7 +53,8 @@ if TYPE_CHECKING:
             "List collections visible to the authenticated user. "
             "The response includes: the user's own collections, collections they collaborate on, "
             "all PUBLIC collections, and FRIENDS collections owned by their friends. "
-            "PRIVATE collections are only visible to their owner."
+            "PRIVATE collections are only visible to their owner. "
+            "`is_favorite` reflects the requesting user's own favorite."
         ),
         parameters=[
             OpenApiParameter(
@@ -100,18 +109,24 @@ if TYPE_CHECKING:
             ),
             OpenApiParameter(
                 name="is_favorite",
-                description="When true, return only collections the owner has marked as a favourite.",
+                description=(
+                    "When true, return only collections the requesting user has favorited; when false, only "
+                    "those they have not. Favorites are per user, so anonymous visitors have none."
+                ),
             ),
         ],
     ),
     create=extend_schema(
-        description="Create a new collection. The authenticated user is automatically set as the owner.",
+        description=(
+            "Create a new collection. The authenticated user is automatically set as the owner. "
+            "Favorites are not part of the payload; use the `favorite` endpoint."
+        ),
     ),
     retrieve=extend_schema(
         description=(
             "Retrieve a single collection by ID. Returns full detail including collaborators "
             "and the list of items. Visibility rules apply: PRIVATE collections are only "
-            "accessible to their owner."
+            "accessible to their owner. `is_favorite` reflects the requesting user's own favorite."
         ),
     ),
     update=extend_schema(
@@ -133,6 +148,7 @@ class CollectionViewSet(ModelViewSet[Collection]):
       friend - an anonymous visitor only ever sees PUBLIC collections)
     - Create: Any authenticated user
     - Update/Delete: Only owner
+    - Favorite/Unfavorite: Any authenticated user who can see the collection
     """
 
     queryset = Collection.objects.all()
@@ -153,8 +169,15 @@ class CollectionViewSet(ModelViewSet[Collection]):
         user = self.request.user
 
         if not user.is_authenticated:
-            # Anonymous users can only see public collections
-            return queryset.filter(visibility=CollectionVisibility.PUBLIC)
+            # Anonymous users can only see public collections and have no favorites
+            return queryset.filter(visibility=CollectionVisibility.PUBLIC).annotate(
+                is_favorite=Value(value=False, output_field=BooleanField()),
+            )
+
+        # Favorites are per user: each viewer sees only their own
+        queryset = queryset.annotate(
+            is_favorite=Exists(CollectionFavorite.objects.filter(collection=OuterRef("pk"), user=user)),
+        )
 
         # Get IDs of friends
         friend_ids = Friendship.objects.filter(user=user).values_list("friend_id", flat=True)
@@ -246,6 +269,45 @@ class CollectionViewSet(ModelViewSet[Collection]):
 
         # Calculate midpoint
         return (prev_order + next_order) / Decimal("2.0")
+
+    @extend_schema(
+        description=(
+            "Add the collection to the requesting user's favorites. Any authenticated user who can see "
+            "the collection may do so; a collection that is not visible to them returns 404. Favorites are "
+            "private to the user and independent of the owner's. Idempotent: favoriting an already "
+            "favorited collection succeeds without change."
+        ),
+        request=None,
+        responses={204: None},
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="favorite",
+        permission_classes=[IsAuthenticated],
+    )
+    def favorite(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Favorite the collection for the requesting user."""
+        collection = self.get_object()
+        CollectionFavorite.objects.get_or_create(collection=collection, user=cast("User", request.user))
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        description=(
+            "Remove the collection from the requesting user's favorites. Other users' favorites are "
+            "unaffected. Idempotent: unfavoriting a collection that is not favorited succeeds without change."
+        ),
+        request=None,
+        responses={204: None},
+    )
+    @favorite.mapping.delete
+    def unfavorite(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Remove the collection from the requesting user's favorites."""
+        collection = self.get_object()
+        CollectionFavorite.objects.filter(collection=collection, user=cast("User", request.user)).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         description=(
