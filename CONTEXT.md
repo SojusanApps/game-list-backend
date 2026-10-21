@@ -25,10 +25,6 @@ _Avoid_: dictionary model, lookup table, reference data, master data
 The process by which games are created or updated in the system by fetching data from the IGDB database. The canonical source of truth for game records. Triggers re-normalization of `search_title`.
 _Avoid_: sync, game sync, IGDB sync
 
-**Steam Import**:
-The two-step process by which a user imports games from their Steam library into their GameList. Step 1: fetch the user's Steam library by `steam_profile_id` and cross-reference against the local `ExternalGame` records, returning a `matched` list (games known to the system, not yet in the user's GameList) and a `not_found` list (games Steam returned that have no record in the system). Step 2: the user selects from the matched list and submits a bulk-create request to add those games to their GameList. Does not create or modify game records.
-_Avoid_: sync, sync from Steam, pull from Steam
-
 **Title Import**:
 The two-step process by which a user imports games into their GameList from a pasted list of game titles. Step 1: submit the titles and receive, per input title and in input order, up to three candidate games ranked best-first (empty when nothing matches well enough), each flagged when already on the user's GameList. Step 2: the user picks the correct candidate per title (or marks it as not found) and submits a bulk-create request. Stores nothing itself; does not create or modify game records.
 _Avoid_: list import, text import, paste import, manual import
@@ -75,7 +71,7 @@ The owner's own 1-10 number for a game, set per `GameList` entry. Optional: an e
 _Avoid_: rating, grade (for the per-entry number); rank (that is the community position derived from the average score)
 
 **Not planned** (`GameList.status = "NP"`):
-A `GameList` entry for a game the user has added to their list — most often via **Steam Import** or **Title Import** — but does not intend to ever play. Distinct from `Plan to play` (not yet played, but the user does intend to) and `Dropped` (started playing, then abandoned). The point of adding it at all, rather than leaving the game off the list, is to record that the user has or recognizes the game without claiming any intent to play it. A general status like every other `GameList.status` value: assignable and re-settable on any entry via the normal create/update flow, with `Score` remaining optional and, if set, still counted toward the game's `average score` — see [ADR-0020](docs/adr/0020-not-planned-games-count-toward-gamestats.md).
+A `GameList` entry for a game the user has added to their list — most often via **Title Import** — but does not intend to ever play. Distinct from `Plan to play` (not yet played, but the user does intend to) and `Dropped` (started playing, then abandoned). The point of adding it at all, rather than leaving the game off the list, is to record that the user has or recognizes the game without claiming any intent to play it. A general status like every other `GameList.status` value: assignable and re-settable on any entry via the normal create/update flow, with `Score` remaining optional and, if set, still counted toward the game's `average score` — see [ADR-0020](docs/adr/0020-not-planned-games-count-toward-gamestats.md).
 _Avoid_: ignored, skipped, backlog (backlog implies eventual intent to play — that's `Plan to play`)
 
 **Recommendation** (`GameReview.recommendation`):
@@ -102,7 +98,7 @@ _Avoid_: token, claims (as a synonym for the concept itself — those are how an
 The backend's own account record. Resolved _from_ an Identity via the Keycloak authentication class — never assumed to already exist for a given Identity, always looked up or provisioned by `sub`. See [ADR-0006](docs/adr/0006-provisioning-in-authentication-class.md).
 
 **Anonymous visitor**:
-A caller with no Identity and no User at all — not merely "not logged in as anyone in particular," but absent from the request entirely. For read access, treated exactly like an authenticated stranger with no Friendship or Collaborator standing: sees `Game`/Lookup Model data, other users' `GameList`/`GameReview` entries, active `User` accounts, and PUBLIC `Collection`s (never FRIENDS or PRIVATE, since an Anonymous visitor can't hold a Friendship or be a Collaborator). Every write action, and a few read actions that are inherently personal (`GameList.compare`, Steam/Title Import, `GameFollow`, `TranslationSuggestion` browsing), still require a real User.
+A caller with no Identity and no User at all — not merely "not logged in as anyone in particular," but absent from the request entirely. For read access, treated exactly like an authenticated stranger with no Friendship or Collaborator standing: sees `Game`/Lookup Model data, other users' `GameList`/`GameReview` entries, active `User` accounts, and PUBLIC `Collection`s (never FRIENDS or PRIVATE, since an Anonymous visitor can't hold a Friendship or be a Collaborator). Every write action, and a few read actions that are inherently personal (`GameList.compare`, Title Import, `GameFollow`, `TranslationSuggestion` browsing), still require a real User.
 _Avoid_: unauthenticated user, guest (implies a distinct account type; there is none — it's simply the absence of one)
 
 **Account erasure**:
