@@ -11,6 +11,7 @@ from drf_spectacular.views import (
 )
 
 from game_list.game_list.prometheus import custom_export_to_django_view
+from game_list.game_list.sitemaps import sitemap_index, sitemap_section, sitemap_static
 from game_list.game_list.views import ApiVersion
 
 urlpatterns = [
@@ -20,6 +21,9 @@ urlpatterns = [
         custom_export_to_django_view,
         name="prometheus-django-metrics",
     ),
+    path("sitemap.xml", sitemap_index, name="sitemap-index"),
+    path("sitemap-static.xml", sitemap_static, name="sitemap-static"),
+    path("sitemap-<slug:section>-<int:page>.xml", sitemap_section, name="sitemap-section"),
     path("version/", ApiVersion.as_view(), name="api-version"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

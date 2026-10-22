@@ -23,6 +23,8 @@ SECRET_KEY = oeg("DJANGO_SECRET_KEY", "secret_key_to_change_on_production")
 DEBUG = oeg("DJANGO_DEBUG", "False").lower() == "true"
 
 CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
+# Public origin of the frontend; the sitemaps list URLs of this host.
+SITEMAP_BASE_URL = oeg("SITEMAP_BASE_URL", "https://gamelist.sojusan.pl")
 ALLOWED_HOSTS = oeg("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # The default value "" with a combination of split(",") returns [""] instead of empty list [], as a default value.
@@ -391,5 +393,3 @@ CELERY_BEAT_SCHEDULE = {
 # at a queue this codebase has read-only access to and never declares itself - see ADR-0018.
 KEYCLOAK_EVENTS_BROKER_URL = oeg("KEYCLOAK_EVENTS_BROKER_URL", "amqp://guest:guest@rabbitmq:5672//")
 KEYCLOAK_USER_DELETION_QUEUE = oeg("KEYCLOAK_USER_DELETION_QUEUE", "gamelist-backend.user-deletion")
-
-STEAM_API_KEY = oeg("STEAM_API_KEY", "steam_api_key_to_change_on_production")

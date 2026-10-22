@@ -103,8 +103,7 @@ if TYPE_CHECKING:
             OpenApiParameter(
                 name="type",
                 description=(
-                    "Filter by collection type (e.g. GAMES). "
-                    "Can be specified multiple times to match several values."
+                    "Filter by collection type (e.g. GAMES). Can be specified multiple times to match several values."
                 ),
             ),
             OpenApiParameter(
