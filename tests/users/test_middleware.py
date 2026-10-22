@@ -1,6 +1,6 @@
 """Test for users middleware."""
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 
 import pytest
@@ -59,7 +59,7 @@ def test_update_last_activity_middleware(middleware: UpdateLastActivityMiddlewar
         user.refresh_from_db()
 
         # Database value shouldn't change
-        assert user.last_active == datetime.datetime(2026, 3, 23, 12, 0, 0, tzinfo=datetime.UTC)
+        assert user.last_active == dt.datetime(2026, 3, 23, 12, 0, 0, tzinfo=dt.UTC)
 
     # Let cooldown expire
     cache.clear()

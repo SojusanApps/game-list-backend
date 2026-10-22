@@ -88,7 +88,7 @@ from game_list.notifications.utils import notify_send
 from game_list.users.models import User
 
 if TYPE_CHECKING:
-    import datetime
+    import datetime as dt
 
     from django.db.models import QuerySet
     from rest_framework.request import Request
@@ -916,15 +916,13 @@ class TranslationSuggestionViewSet(
             OpenApiParameter(
                 name="game_status",
                 description=(
-                    "Filter by game status name. Accepts names in English or Polish. "
-                    "Can be specified multiple times."
+                    "Filter by game status name. Accepts names in English or Polish. Can be specified multiple times."
                 ),
             ),
             OpenApiParameter(
                 name="game_engines",
                 description=(
-                    "Filter by game engine name. Accepts names in English or Polish. "
-                    "Can be specified multiple times."
+                    "Filter by game engine name. Accepts names in English or Polish. Can be specified multiple times."
                 ),
             ),
             OpenApiParameter(
@@ -1049,7 +1047,7 @@ class GameViewSet(ReadOnlyModelViewSet[Game]):
             .order_by("release_date", "-stats__popularity")
         )
 
-        grouped_games: dict[datetime.date, list[Game]] = {}
+        grouped_games: dict[dt.date, list[Game]] = {}
         for game in queryset:
             release_date = game.release_date
             if release_date is None:

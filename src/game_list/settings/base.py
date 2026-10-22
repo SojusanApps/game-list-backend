@@ -23,6 +23,8 @@ SECRET_KEY = oeg("DJANGO_SECRET_KEY", "secret_key_to_change_on_production")
 DEBUG = oeg("DJANGO_DEBUG", "False").lower() == "true"
 
 CORS_ALLOWED_ORIGINS = oeg("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:4200").split(",")
+# Public origin of the frontend; the sitemaps list URLs of this host.
+SITEMAP_BASE_URL = oeg("SITEMAP_BASE_URL", "https://gamelist.sojusan.pl")
 ALLOWED_HOSTS = oeg("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 # The default value "" with a combination of split(",") returns [""] instead of empty list [], as a default value.

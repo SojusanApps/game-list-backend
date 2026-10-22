@@ -1,6 +1,6 @@
 """Tests for the release_calendar endpoint on GameViewSet."""
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 
 import pytest
@@ -21,19 +21,19 @@ def calendar_games() -> list[Game]:
 
     # 2024-01-01 -> 3 games (to test limits)
     for i in range(3):
-        game1: Game = baker.make("games.Game", release_date=datetime.date(2024, 1, 1))
+        game1: Game = baker.make("games.Game", release_date=dt.date(2024, 1, 1))
         # Update existing auto-created GameStats
         GameStats.objects.filter(game=game1).update(members_count=(i + 1) * 10, popularity=(i + 1) * 10)
         games.append(game1)
 
     # 2024-01-02 -> 1 game
-    game2: Game = baker.make("games.Game", release_date=datetime.date(2024, 1, 2))
+    game2: Game = baker.make("games.Game", release_date=dt.date(2024, 1, 2))
     GameStats.objects.filter(game=game2).update(members_count=50, popularity=50)
     games.append(game2)
 
     # 2024-01-03 -> 2 games
     for i in range(2):
-        game3: Game = baker.make("games.Game", release_date=datetime.date(2024, 1, 3))
+        game3: Game = baker.make("games.Game", release_date=dt.date(2024, 1, 3))
         GameStats.objects.filter(game=game3).update(members_count=(i + 1) * 5, popularity=(i + 1) * 5)
         games.append(game3)
 
