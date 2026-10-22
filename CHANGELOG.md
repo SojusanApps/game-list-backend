@@ -2,6 +2,15 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [6.0.0] - 22.10.2026
+
+* [BREAKING] Removed the Steam import endpoint `GET /game-lists/steam-import/` (it fetched the user's library through the Steam Web API using an API key) together with `SteamImportResponseSerializer`, the `STEAM_API_KEY` setting and environment variable, and the Bruno requests for it. Use the title import endpoint (`POST /game-lists/title-import/`) followed by the bulk-create endpoint instead.
+* Added sitemaps for search engine discovery of the public frontend pages: `/sitemap.xml` (index), `/sitemap-static.xml` and `/sitemap-<section>-<page>.xml` (games, companies, public non-moderated collections and active user profiles, split into files of up to 50 000 URLs, cached for 24 hours). The URLs point to the frontend host configured with the new `SITEMAP_BASE_URL` setting (default `https://gamelist.sojusan.pl`).
+* Added a `/sitemap*.xml` route to the gateway nginx configuration, forwarding the sitemap requests to the backend.
+* Updated dependencies and `prek` hooks (`black`, `ruff`).
+* Updated the project glossary (`CONTEXT.md`) to drop the Steam import.
+* Minor cleanups: unified the `datetime` import alias and reflowed a few `extend_schema` descriptions.
+
 ## v. [5.4.0] - 24.09.2026
 
 * Added ordering of the game list by the owner's score and by game title (`ordering=score`, `-score`, `title`, `-title`, or a comma-separated combination). Unscored entries always come last, and ties are ordered by game title and then by ID.
