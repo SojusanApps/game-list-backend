@@ -110,3 +110,10 @@ def test_profiles_sitemap_excludes_inactive_banned_and_masked_users(api_client: 
 def test_unknown_section_or_out_of_range_page_is_404(api_client: APIClient, path: str) -> None:
     """Unknown sections, page 0 and pages past the end return 404."""
     assert api_client.get(path).status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.parametrize("url", ["/sitemap.xml", "/sitemap-static.xml", "/sitemap-games-1.xml"])
+def test_sitemaps_reject_unsafe_methods(api_client: APIClient, url: str) -> None:
+    """Only GET and HEAD are accepted; anything else is a 405."""
+    assert api_client.post(url).status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    assert api_client.delete(url).status_code == status.HTTP_405_METHOD_NOT_ALLOWED

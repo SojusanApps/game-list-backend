@@ -13,6 +13,7 @@ from xml.sax.saxutils import escape
 from django.conf import settings
 from django.http import Http404, HttpRequest, HttpResponse
 from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_safe
 
 from game_list.collections.models import Collection, CollectionVisibility
 from game_list.games.models import Company, Game
@@ -94,6 +95,7 @@ def _xml_response(body: str) -> HttpResponse:
     return HttpResponse(body, content_type="application/xml; charset=utf-8")
 
 
+@require_safe
 @cache_page(CACHE_TIMEOUT)
 def sitemap_index(request: HttpRequest) -> HttpResponse:  # noqa: ARG001
     """Return the sitemap index pointing to the static pages sitemap and every numbered section sitemap."""
@@ -107,6 +109,7 @@ def sitemap_index(request: HttpRequest) -> HttpResponse:  # noqa: ARG001
     return _xml_response(body + "</sitemapindex>\n")
 
 
+@require_safe
 @cache_page(CACHE_TIMEOUT)
 def sitemap_static(request: HttpRequest) -> HttpResponse:  # noqa: ARG001
     """Return the sitemap of the fixed, publicly reachable pages."""
@@ -116,6 +119,7 @@ def sitemap_static(request: HttpRequest) -> HttpResponse:  # noqa: ARG001
     return _xml_response(body + "</urlset>\n")
 
 
+@require_safe
 @cache_page(CACHE_TIMEOUT)
 def sitemap_section(request: HttpRequest, section: str, page: int) -> HttpResponse:  # noqa: ARG001
     """Return one numbered sitemap file of a section (games, companies, collections, profiles)."""
