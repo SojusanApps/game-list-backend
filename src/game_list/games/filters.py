@@ -26,6 +26,7 @@ from game_list.games.models import (
     Platform,
     PlayerPerspective,
     ReviewLanguage,
+    StoreMapping,
     TranslationSuggestion,
 )
 from game_list.games.search import filter_queryset_by_title
@@ -270,6 +271,7 @@ class GameFilterSet(filters.FilterSet):
         model = Game
         fields = (
             "id",
+            "igdb_id",
             "title",
             "release_date",
             "publisher",
@@ -397,6 +399,27 @@ class TranslationSuggestionFilterSet(filters.FilterSet):
             "id",
             "game",
             "field",
+            "status",
+            "submitted_by",
+        )
+
+
+class StoreMappingFilterSet(filters.FilterSet):
+    """Filter set for store mapping model."""
+
+    game = filters.NumberFilter(field_name="game__id")
+    submitted_by = filters.NumberFilter(field_name="submitted_by__id")
+
+    class Meta:
+        """Meta class for store mapping filter set."""
+
+        model = StoreMapping
+        fields = (
+            "id",
+            "platform",
+            "store_id",
+            "game",
+            "not_a_game",
             "status",
             "submitted_by",
         )

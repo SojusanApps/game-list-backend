@@ -18,6 +18,7 @@ from game_list.games.views import (
     GenreViewSet,
     PlatformViewSet,
     PlayerPerspectiveViewSet,
+    StoreMappingViewSet,
     TranslationSuggestionViewSet,
 )
 
@@ -38,6 +39,7 @@ router.register("game-engines", GameEngineViewSet, basename="game-engines")
 router.register("game-modes", GameModeViewSet, basename="game-modes")
 router.register("player-perspectives", PlayerPerspectiveViewSet, basename="player-perspectives")
 router.register("external-game-sources", ExternalGameSourceViewSet, basename="external-game-sources")
+router.register("store-mappings", StoreMappingViewSet, basename="store-mappings")
 router.register("translation-suggestions", TranslationSuggestionViewSet, basename="translation-suggestions")
 
 urlpatterns = [

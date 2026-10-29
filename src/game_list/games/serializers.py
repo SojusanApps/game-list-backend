@@ -1,6 +1,6 @@
 """This module contains the serializers for the game related data."""
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -22,6 +22,8 @@ from game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    StoreMapping,
+    StorePlatform,
     TranslationSuggestion,
     TranslationSuggestionField,
 )
@@ -466,51 +468,6 @@ class ReleaseCalendarQuerySerializer(serializers.Serializer[Any]):
     )
 
 
-class TitleImportRequestSerializer(serializers.Serializer[Any]):
-    """A serializer for the title import endpoint request body."""
-
-    titles = serializers.ListField(
-        child=serializers.CharField(max_length=255, help_text="A game title to match."),
-        min_length=1,
-        max_length=10,
-        help_text="Game titles to match against the catalogue, at most 10 per request.",
-    )
-
-
-class TitleImportMatchSerializer(serializers.Serializer[Any]):
-    """A serializer for a single candidate game matched to an imported title."""
-
-    id = serializers.IntegerField(help_text="The ID of the matched game.")
-    title = serializers.CharField(help_text="The title of the matched game.")
-    cover_image_id = serializers.CharField(help_text="The IGDB cover image ID of the matched game.")
-    already_in_list = serializers.BooleanField(
-        help_text="Whether the matched game is already on the requesting user's game list.",
-    )
-    release_date = serializers.DateField(
-        allow_null=True,
-        help_text="The worldwide release date of the game.",
-    )
-
-
-class TitleImportResultSerializer(serializers.Serializer[Any]):
-    """A serializer for the match candidates of a single imported title."""
-
-    title = serializers.CharField(help_text="The input title, echoed back verbatim.")
-    matches = TitleImportMatchSerializer(
-        many=True,
-        help_text="Up to three candidate games, best match first; empty when nothing matched well enough.",
-    )
-
-
-class TitleImportResponseSerializer(serializers.Serializer[Any]):
-    """A serializer for the title import endpoint response."""
-
-    results = TitleImportResultSerializer(
-        many=True,
-        help_text="One entry per input title, in input order.",
-    )
-
-
 TRANSLATION_SUGGESTION_FIELD_MAX_LENGTHS: dict[str, int] = {
     TranslationSuggestionField.TITLE: 255,
     TranslationSuggestionField.SUMMARY: 2000,
@@ -624,3 +581,181 @@ class TranslationSuggestionCreateSerializer(serializers.ModelSerializer[Translat
             submitted_by=request.user,
             current_value=current_value,
         )
+
+
+MAX_STORE_IMPORT_ENTRIES = 5000
+PLATFORM_HELP_TEXT = "The store the game is listed on."
+STORE_ID_HELP_TEXT = "The store's own identifier of the game."
+
+
+class StoreEntrySerializer(serializers.Serializer[Any]):
+    """A serializer for one game of a store library, as sent by the browser extension."""
+
+    platform = serializers.ChoiceField(choices=StorePlatform.choices, help_text=PLATFORM_HELP_TEXT)
+    store_id = serializers.CharField(max_length=255, help_text=STORE_ID_HELP_TEXT)
+    title = serializers.CharField(max_length=255, help_text="The game's title on the store.")
+    wishlisted = serializers.BooleanField(
+        help_text="Whether the game is only on the store wishlist; false when the user owns it.",
+    )
+
+
+class StoreImportRequestSerializer(serializers.Serializer[Any]):
+    """A serializer for the store import endpoint request body."""
+
+    entries = StoreEntrySerializer(
+        many=True,
+        allow_empty=False,
+        help_text=f"Store library entries to import, at most {MAX_STORE_IMPORT_ENTRIES} per request.",
+    )
+
+    def validate_entries(self: Self, value: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Reject a request with more entries than one request may carry."""
+        if len(value) > MAX_STORE_IMPORT_ENTRIES:
+            message = _("Ensure this field has no more than %(max)s entries.") % {"max": MAX_STORE_IMPORT_ENTRIES}
+            raise serializers.ValidationError(message)
+        return value
+
+
+class StoreImportedGameSerializer(serializers.Serializer[Any]):
+    """A serializer for a store entry that matched a game."""
+
+    platform = serializers.CharField(help_text=PLATFORM_HELP_TEXT)
+    store_id = serializers.CharField(help_text=STORE_ID_HELP_TEXT)
+    game = GameReferenceSerializer(help_text="The game the entry was matched to.")
+
+
+class StoreImportResponseSerializer(serializers.Serializer[Any]):
+    """A serializer for the store import endpoint response."""
+
+    imported = StoreImportedGameSerializer(many=True, help_text="Entries matched and added to the game list now.")
+    already_added = StoreImportedGameSerializer(
+        many=True,
+        help_text="Entries matched to a game that was already on the game list.",
+    )
+    unmatched = StoreEntrySerializer(
+        many=True,
+        help_text="Entries that could not be matched and need the title match step.",
+    )
+    skipped = StoreEntrySerializer(
+        many=True,
+        help_text="Entries a Store Mapping marks as not a game; they are not imported.",
+    )
+
+
+class StoreMappingRefSerializer(serializers.Serializer[Any]):
+    """The store reference an item of the bulk-create request may carry to propose a Store Mapping."""
+
+    platform = serializers.ChoiceField(choices=StorePlatform.choices, help_text=PLATFORM_HELP_TEXT)
+    store_id = serializers.CharField(max_length=255, help_text=STORE_ID_HELP_TEXT)
+    store_title = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="The game's title on the store.",
+    )
+
+
+class StoreLinkItemSerializer(StoreEntrySerializer):
+    """A store entry matched by hand to a game that is already on the user's game list."""
+
+    game = serializers.PrimaryKeyRelatedField(  # type: ignore[var-annotated]
+        queryset=Game.objects.all(),
+        help_text="The game on the user's list the entry was matched to.",
+    )
+
+
+class StoreLinkRequestSerializer(serializers.Serializer[Any]):
+    """A serializer for the store link endpoint request body."""
+
+    entries = StoreLinkItemSerializer(many=True, allow_empty=False, help_text="Matches to apply.")
+
+
+class StoreNotAGameRequestSerializer(serializers.Serializer[Any]):
+    """A serializer for the request proposing store items as not a game."""
+
+    entries = StoreMappingRefSerializer(
+        many=True,
+        allow_empty=False,
+        help_text="Store items the user marks as not a game (a soundtrack, for example).",
+    )
+
+
+class StoreMappingSerializer(serializers.ModelSerializer[StoreMapping]):
+    """A serializer for reading store mappings."""
+
+    game = GameReferenceSerializer(read_only=True, allow_null=True)
+    submitted_by = UserSimpleSerializer(read_only=True)
+    reviewed_by = UserSimpleSerializer(read_only=True)
+
+    class Meta:
+        """Meta data for the store mapping serializer."""
+
+        model = StoreMapping
+        fields = (
+            "id",
+            "platform",
+            "store_id",
+            "store_title",
+            "game",
+            "not_a_game",
+            "submitted_by",
+            "status",
+            "submitted_at",
+            "reviewed_by",
+            "reviewed_at",
+            "rejection_reason",
+        )
+        read_only_fields = fields
+
+
+class StoreMappingCreateSerializer(serializers.ModelSerializer[StoreMapping]):
+    """A serializer for an admin creating an already accepted store mapping by hand."""
+
+    class Meta:
+        """Meta data for the store mapping create serializer."""
+
+        model = StoreMapping
+        fields = ("id", "platform", "store_id", "store_title", "game", "not_a_game", "status")
+        read_only_fields = ("id", "status")
+        extra_kwargs: ClassVar[dict[str, dict[str, Any]]] = {
+            "store_title": {"required": False},
+            "game": {"required": False, "allow_null": True},
+        }
+
+    def validate(self: Self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Require a game unless the store item is marked as not a game, and forbid both."""
+        if attrs.get("not_a_game") and attrs.get("game") is not None:
+            message = _("A store item marked as not a game cannot be mapped to a game.")
+            raise serializers.ValidationError(message)
+        if not attrs.get("not_a_game") and attrs.get("game") is None:
+            message = _("Choose a game, or mark the store item as not a game.")
+            raise serializers.ValidationError({"game": message})
+        return attrs
+
+
+class StoreMappingRejectSerializer(serializers.Serializer[Any]):
+    """A serializer for the optional reason an admin gives when rejecting a store mapping."""
+
+    rejection_reason = serializers.CharField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Optional reason for the rejection.",
+    )
+
+
+class GameListBulkCreateItemSerializer(GameListCreateSerializer):
+    """The schema of one item of the bulk-create request: a game-list entry plus optional store references."""
+
+    store_refs = StoreMappingRefSerializer(
+        many=True,
+        required=False,
+        help_text="Store ids this game was picked for; each is recorded as a pending Store Mapping for the user.",
+    )
+
+    class Meta(GameListCreateSerializer.Meta):
+        """Meta data for the game list bulk create item serializer."""
+
+        fields = (*GameListCreateSerializer.Meta.fields, "store_refs")  # type: ignore[assignment]

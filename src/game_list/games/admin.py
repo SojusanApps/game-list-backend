@@ -21,6 +21,7 @@ from game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    StoreMapping,
     TranslationSuggestion,
 )
 
@@ -198,3 +199,14 @@ class TranslationSuggestionAdmin(admin.ModelAdmin[TranslationSuggestion]):
     raw_id_fields = ("game", "submitted_by", "reviewed_by")
     list_filter = ("field", "status", "submitted_at")
     list_display = (*readonly_fields, *list_filter, *raw_id_fields)
+
+
+@admin.register(StoreMapping)
+class StoreMappingAdmin(admin.ModelAdmin[StoreMapping]):
+    """Admin model for the store mapping model."""
+
+    readonly_fields = ("id", "submitted_at", "reviewed_at")
+    search_fields = ("store_id", "store_title", "game__title_en", "game__title_pl", "submitted_by__username")
+    raw_id_fields = ("game", "submitted_by", "reviewed_by")
+    list_filter = ("platform", "status", "submitted_at")
+    list_display = (*readonly_fields, "platform", "store_id", "store_title", "not_a_game", "status", *raw_id_fields)

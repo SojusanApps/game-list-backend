@@ -2,6 +2,22 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [6.1.0] - 29.10.2026
+
+* [BREAKING] Removed the title import endpoint `POST /game-lists/title-import/` (the frontend no longer uses it) together with `TitleImportRequestSerializer`, `TitleImportMatchSerializer`, `TitleImportResultSerializer`, `TitleImportResponseSerializer` and the Bruno request for it.
+* Added the store import endpoint `POST /game-lists/store-import/`. The browser extension now reads the store id of each game; the endpoint matches every entry by `platform` and `store_id` against IGDB's external games, then against accepted Store Mappings, then against the user's own pending ones. Matched games are added to the game list as Plan to Play, unscored, with `owned_on` set to the store for owned (not wishlisted) games; for a game already on the list only the store is appended to `owned_on`. Entries that cannot be matched (or whose id points at several games) are returned as `unmatched` for the title match step. At most 5000 entries per request.
+* Added the `StoreMapping` model: a link from a store game (`platform` plus `store_id`) to a `Game`, with a pending, accepted or rejected lifecycle like Translation Suggestions. A pending mapping applies only to its submitter until an admin accepts it; accepting supersedes the previous accepted mapping and rejects the other pending ones. Registered in the Django admin.
+* Added the admin-only `store-mappings` API: list (filterable by status, platform, store id, game and submitter), retrieve, create (accepted at once), `accept` and `reject`.
+* The bulk-create endpoint accepts optional `store_refs` on each item; the picked game is recorded as a pending Store Mapping for each of them.
+* A Store Mapping can mark a store item as not a game (`not_a_game`, with no game), e.g. a soundtrack. Admins set it when creating a mapping (the `game` is then omitted); once accepted, the store import skips the item and returns it as `skipped` instead of `unmatched`. The `store-mappings` API gained the `not_a_game` field and filter.
+* Added `POST /game-lists/store-link/`: matches store entries by hand to games already on the user's list; each match is recorded as a pending Store Mapping and, for an owned entry, the store is appended to `owned_on` (nothing else of the entry changes).
+* Added `POST /game-lists/store-not-a-game/`: a user proposes store items as not a game; each becomes a pending Store Mapping that makes the store import skip the item for them, and for everyone once an admin accepts it.
+* The `reject` action of `store-mappings` validates the optional `rejection_reason` (a string of at most 500 characters) and answers 400 otherwise (`StoreMappingRejectSerializer`).
+* Added the "Nintendo eShop" game media.
+* Added the Polish translations of the store mapping texts and filled in the missing "language", "English" and "Polish" ones.
+* Added the `GameListBulkCreateItemSerializer` schema for the bulk-create request body.
+* Games can now be filtered by `igdb_id` (`GET /games/?igdb_id=<id>`).
+
 ## v. [6.0.0] - 22.10.2026
 
 * [BREAKING] Removed the Steam import endpoint `GET /game-lists/steam-import/` (it fetched the user's library through the Steam Web API using an API key) together with `SteamImportResponseSerializer`, the `STEAM_API_KEY` setting and environment variable, and the Bruno requests for it. Use the title import endpoint (`POST /game-lists/title-import/`) followed by the bulk-create endpoint instead.

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-23 06:19+0000\n"
+"POT-Creation-Date: 2026-10-27 17:36+0000\n"
 "PO-Revision-Date: 2022-08-11 18:47+0000\n"
 "Last-Translator:   <>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,8 +32,8 @@ msgstr "Posiada tier"
 #: src/game_list/collections/models.py:12
 #: src/game_list/friendships/models.py:22
 #: src/game_list/friendships/models.py:84 src/game_list/games/models.py:107
-#: src/game_list/games/models.py:202 src/game_list/games/models.py:250
-#: src/game_list/games/models.py:613
+#: src/game_list/games/models.py:202 src/game_list/games/models.py:258
+#: src/game_list/games/models.py:745
 msgid "creation time"
 msgstr "czas stworzenia"
 
@@ -98,7 +98,7 @@ msgid "F Tier"
 msgstr "Tier F"
 
 #: src/game_list/collections/models.py:58 src/game_list/game_list/models.py:14
-#: src/game_list/games/models.py:55 src/game_list/games/models.py:337
+#: src/game_list/games/models.py:55 src/game_list/games/models.py:351
 msgid "name"
 msgstr "nazwa"
 
@@ -110,7 +110,7 @@ msgstr "opis"
 
 #: src/game_list/collections/models.py:66
 #: src/game_list/collections/models.py:204 src/game_list/games/models.py:180
-#: src/game_list/games/models.py:264 src/game_list/games/models.py:558
+#: src/game_list/games/models.py:278 src/game_list/games/models.py:572
 msgid "is moderated"
 msgstr "zmoderowana"
 
@@ -122,19 +122,19 @@ msgstr "widoczność"
 msgid "mode"
 msgstr "tryb"
 
-#: src/game_list/collections/models.py:85 src/game_list/games/models.py:431
+#: src/game_list/collections/models.py:85 src/game_list/games/models.py:445
 msgid "type"
 msgstr "typ"
 
 #: src/game_list/collections/models.py:92
 #: src/game_list/collections/models.py:209
 #: src/game_list/friendships/models.py:85 src/game_list/games/models.py:203
-#: src/game_list/games/models.py:614
+#: src/game_list/games/models.py:746
 msgid "last modified"
 msgstr "ostatnio zmodyfikowano"
 
 #: src/game_list/collections/models.py:94 src/game_list/games/models.py:63
-#: src/game_list/games/models.py:634 src/game_list/users/models.py:36
+#: src/game_list/games/models.py:766 src/game_list/users/models.py:36
 msgid "slug"
 msgstr "slug"
 
@@ -172,7 +172,7 @@ msgstr "kolejność"
 msgid "tier"
 msgstr "tier"
 
-#: src/game_list/collections/models.py:222 src/game_list/games/models.py:793
+#: src/game_list/collections/models.py:222 src/game_list/games/models.py:925
 msgid "game"
 msgstr "gra"
 
@@ -196,13 +196,13 @@ msgstr "Duplikaty identyfikatorów elementów są niedozwolone."
 msgid "Duplicate positions are not allowed."
 msgstr "Duplikaty pozycji są niedozwolone."
 
-#: src/game_list/collections/views.py:694
+#: src/game_list/collections/views.py:693
 msgid "Only the owner can add items to non-collaborative collections."
 msgstr ""
 "Tylko właściciel może dodawać elementy do kolekcji, które nie są "
 "współdzielone."
 
-#: src/game_list/collections/views.py:697
+#: src/game_list/collections/views.py:696
 msgid "You must be a collaborator to add items to this collection."
 msgstr "Musisz być współtwórcą, aby dodawać elementy do tej kolekcji."
 
@@ -322,8 +322,9 @@ msgstr "multimedia gier"
 msgid "score"
 msgstr "ocena"
 
-#: src/game_list/games/models.py:168 src/game_list/games/models.py:452
-#: src/game_list/games/models.py:563 src/game_list/moderation/models.py:197
+#: src/game_list/games/models.py:168 src/game_list/games/models.py:466
+#: src/game_list/games/models.py:577 src/game_list/games/models.py:684
+#: src/game_list/moderation/models.py:197
 msgid "status"
 msgstr "status"
 
@@ -359,234 +360,313 @@ msgstr "Nie polecam"
 msgid "Undecided"
 msgstr "Nie mam zdania"
 
-#: src/game_list/games/models.py:252
+#: src/game_list/games/models.py:248 src/game_list/settings/base.py:137
+msgid "English"
+msgstr "Angielski"
+
+#: src/game_list/games/models.py:249 src/game_list/settings/base.py:138
+msgid "Polish"
+msgstr "Polski"
+
+#: src/game_list/games/models.py:260
 msgid "review"
 msgstr "recenzja"
 
-#: src/game_list/games/models.py:258
+#: src/game_list/games/models.py:266
 msgid "recommendation"
 msgstr "rekomendacja"
 
-#: src/game_list/games/models.py:285
+#: src/game_list/games/models.py:272
+msgid "language"
+msgstr "język"
+
+#: src/game_list/games/models.py:299
 msgid "game review"
 msgstr "recenzja gry"
 
-#: src/game_list/games/models.py:286
+#: src/game_list/games/models.py:300
 msgid "games reviews"
 msgstr "recenzje gier"
 
-#: src/game_list/games/models.py:306
+#: src/game_list/games/models.py:320
 msgid "genre"
 msgstr "gatunek"
 
-#: src/game_list/games/models.py:307
+#: src/game_list/games/models.py:321
 msgid "genres"
 msgstr "gatunki"
 
-#: src/game_list/games/models.py:314
+#: src/game_list/games/models.py:328
 msgid "abbreviation"
 msgstr "skrót"
 
-#: src/game_list/games/models.py:323
+#: src/game_list/games/models.py:337 src/game_list/games/models.py:648
 msgid "platform"
 msgstr "platforma"
 
-#: src/game_list/games/models.py:324
+#: src/game_list/games/models.py:338
 msgid "platforms"
 msgstr "platformy"
 
-#: src/game_list/games/models.py:342
+#: src/game_list/games/models.py:356
 msgid "game engine"
 msgstr "silnik gry"
 
-#: src/game_list/games/models.py:343
+#: src/game_list/games/models.py:357
 msgid "game engines"
 msgstr "silniki gier"
 
-#: src/game_list/games/models.py:352
+#: src/game_list/games/models.py:366
 msgid "game mode"
 msgstr "tryb gry"
 
-#: src/game_list/games/models.py:353
+#: src/game_list/games/models.py:367
 msgid "game modes"
 msgstr "tryby gry"
 
-#: src/game_list/games/models.py:362
+#: src/game_list/games/models.py:376
 msgid "player perspective"
 msgstr "perspektywa gracza"
 
-#: src/game_list/games/models.py:363
+#: src/game_list/games/models.py:377
 msgid "player perspectives"
 msgstr "perspektywy gracza"
 
-#: src/game_list/games/models.py:378
+#: src/game_list/games/models.py:392
 msgid "score sum"
 msgstr "suma ocen"
 
-#: src/game_list/games/models.py:383
+#: src/game_list/games/models.py:397
 msgid "score count"
 msgstr "liczba ocen"
 
-#: src/game_list/games/models.py:388
+#: src/game_list/games/models.py:402
 msgid "average score"
 msgstr "średnia ocena"
 
-#: src/game_list/games/models.py:396
+#: src/game_list/games/models.py:410
 msgid "members count"
 msgstr "liczba członków"
 
-#: src/game_list/games/models.py:404
+#: src/game_list/games/models.py:418
 msgid "popularity"
 msgstr "popularność"
 
-#: src/game_list/games/models.py:410
+#: src/game_list/games/models.py:424
 msgid "rank position"
 msgstr "pozycja w rankingu"
 
-#: src/game_list/games/models.py:419 src/game_list/games/models.py:420
+#: src/game_list/games/models.py:433 src/game_list/games/models.py:434
 msgid "game stats"
 msgstr "statystyki gry"
 
-#: src/game_list/games/models.py:440
+#: src/game_list/games/models.py:454
 msgid "game type"
 msgstr "typ gry"
 
-#: src/game_list/games/models.py:441
+#: src/game_list/games/models.py:455
 msgid "game types"
 msgstr "typy gier"
 
-#: src/game_list/games/models.py:461
+#: src/game_list/games/models.py:475
 msgid "game status"
 msgstr "status gry"
 
-#: src/game_list/games/models.py:462
+#: src/game_list/games/models.py:476
 msgid "game statuses"
 msgstr "statusy gier"
 
-#: src/game_list/games/models.py:475
+#: src/game_list/games/models.py:489
 msgid "external game source"
 msgstr "źródło zewnętrznej gry"
 
-#: src/game_list/games/models.py:476
+#: src/game_list/games/models.py:490
 msgid "external game sources"
 msgstr "źródła zewnętrznych gier"
 
-#: src/game_list/games/models.py:489
+#: src/game_list/games/models.py:503
 msgid "external id"
 msgstr "id zewnętrzne"
 
-#: src/game_list/games/models.py:494
+#: src/game_list/games/models.py:508
 msgid "url"
 msgstr "url"
 
-#: src/game_list/games/models.py:503
+#: src/game_list/games/models.py:517
 msgid "external game"
 msgstr "zewnętrzna gra"
 
-#: src/game_list/games/models.py:504
+#: src/game_list/games/models.py:518
 msgid "external games"
 msgstr "zewnętrzne gry"
 
-#: src/game_list/games/models.py:510
+#: src/game_list/games/models.py:524
 msgid "Title"
 msgstr "Tytuł"
 
-#: src/game_list/games/models.py:511
+#: src/game_list/games/models.py:525
 msgid "Summary"
 msgstr "Opis fabuły"
 
-#: src/game_list/games/models.py:517 src/game_list/moderation/models.py:36
+#: src/game_list/games/models.py:531 src/game_list/games/models.py:636
+#: src/game_list/moderation/models.py:36
 msgid "Pending"
 msgstr "Oczekuje"
 
-#: src/game_list/games/models.py:518 src/game_list/moderation/models.py:37
+#: src/game_list/games/models.py:532 src/game_list/games/models.py:637
+#: src/game_list/moderation/models.py:37
 msgid "Accepted"
 msgstr "Zaakceptowano"
 
-#: src/game_list/games/models.py:519 src/game_list/moderation/models.py:38
+#: src/game_list/games/models.py:533 src/game_list/games/models.py:638
+#: src/game_list/moderation/models.py:38
 msgid "Rejected"
 msgstr "Odrzucono"
 
-#: src/game_list/games/models.py:520
+#: src/game_list/games/models.py:534
 msgid "Withdrawn"
 msgstr "Wycofano"
 
-#: src/game_list/games/models.py:536
+#: src/game_list/games/models.py:550
 msgid "field"
 msgstr "pole"
 
-#: src/game_list/games/models.py:548
+#: src/game_list/games/models.py:562
 msgid "current value"
 msgstr "aktualna wartość"
 
-#: src/game_list/games/models.py:553
+#: src/game_list/games/models.py:567
 msgid "proposed value"
 msgstr "proponowana wartość"
 
-#: src/game_list/games/models.py:569 src/game_list/moderation/models.py:203
+#: src/game_list/games/models.py:583 src/game_list/games/models.py:690
+#: src/game_list/moderation/models.py:203
 msgid "submitted at"
 msgstr "zgłoszono"
 
-#: src/game_list/games/models.py:579 src/game_list/moderation/models.py:213
+#: src/game_list/games/models.py:593 src/game_list/games/models.py:700
+#: src/game_list/moderation/models.py:213
 msgid "reviewed at"
 msgstr "rozpatrzono"
 
-#: src/game_list/games/models.py:585 src/game_list/moderation/models.py:219
+#: src/game_list/games/models.py:599 src/game_list/games/models.py:706
+#: src/game_list/moderation/models.py:219
 msgid "rejection reason"
 msgstr "powód odrzucenia"
 
-#: src/game_list/games/models.py:594
+#: src/game_list/games/models.py:608
 msgid "translation suggestion"
 msgstr "sugestia tłumaczenia"
 
-#: src/game_list/games/models.py:595
+#: src/game_list/games/models.py:609
 msgid "translation suggestions"
 msgstr "sugestie tłumaczenia"
 
-#: src/game_list/games/models.py:612
+#: src/game_list/games/models.py:626
+msgid "Steam"
+msgstr "Steam"
+
+#: src/game_list/games/models.py:627
+msgid "Epic Games Store"
+msgstr "Epic Games Store"
+
+#: src/game_list/games/models.py:628
+msgid "GOG"
+msgstr "GOG"
+
+#: src/game_list/games/models.py:629
+msgid "PlayStation Store"
+msgstr "PlayStation Store"
+
+#: src/game_list/games/models.py:630
+msgid "Nintendo eShop"
+msgstr "Nintendo eShop"
+
+#: src/game_list/games/models.py:654
+msgid "store id"
+msgstr "id w sklepie"
+
+#: src/game_list/games/models.py:659
+msgid "store title"
+msgstr "tytuł w sklepie"
+
+#: src/game_list/games/models.py:673
+msgid "not a game"
+msgstr "to nie gra"
+
+#: src/game_list/games/models.py:715
+msgid "store mapping"
+msgstr "mapowanie sklepu"
+
+#: src/game_list/games/models.py:716
+msgid "store mappings"
+msgstr "mapowania sklepów"
+
+#: src/game_list/games/models.py:744
 msgid "title"
 msgstr "tytuł"
 
-#: src/game_list/games/models.py:616
+#: src/game_list/games/models.py:748
 msgid "release date"
 msgstr "data wydania"
 
-#: src/game_list/games/models.py:622
+#: src/game_list/games/models.py:754
 msgid "cover image id"
 msgstr "id okładki"
 
-#: src/game_list/games/models.py:628
+#: src/game_list/games/models.py:760
 msgid "summary"
 msgstr "opis fabuły"
 
-#: src/game_list/games/models.py:641
+#: src/game_list/games/models.py:773
 msgid "search title"
 msgstr "tytuł wyszukiwania"
 
-#: src/game_list/games/models.py:794
+#: src/game_list/games/models.py:926
 msgid "games"
 msgstr "gry"
 
-#: src/game_list/games/serializers.py:612
+#: src/game_list/games/serializers.py:599
 #, python-format
 msgid "Ensure this field has no more than %(max_length)s characters."
 msgstr "To pole nie może zawierać więcej niż %(max_length)s znaków."
 
-#: src/game_list/games/serializers.py:624
+#: src/game_list/games/serializers.py:611
 msgid "You already have a pending suggestion for this game and field."
 msgstr "Masz już oczekującą sugestię dla tej gry i tego pola."
 
-#: src/game_list/games/views.py:873
+#: src/game_list/games/serializers.py:659
+#, python-format
+msgid "Ensure this field has no more than %(max)s entries."
+msgstr "To pole nie może zawierać więcej niż %(max)s elementów."
+
+#: src/game_list/games/serializers.py:759
+msgid "A store item marked as not a game cannot be mapped to a game."
+msgstr "Element sklepu oznaczony jako nie-gra nie może być zmapowany na grę."
+
+#: src/game_list/games/serializers.py:762
+msgid "Choose a game, or mark the store item as not a game."
+msgstr "Wybierz grę lub oznacz element sklepu jako nie-gra."
+
+#: src/game_list/games/views.py:890
 msgid "Only a pending suggestion can be withdrawn."
 msgstr "Tylko oczekująca sugestia może zostać wycofana."
 
-#: src/game_list/games/views.py:892
+#: src/game_list/games/views.py:909
 msgid "Only a pending suggestion can be accepted."
 msgstr "Tylko oczekująca sugestia może zostać zaakceptowana."
 
-#: src/game_list/games/views.py:939
+#: src/game_list/games/views.py:956
 msgid "Only a pending suggestion can be rejected."
 msgstr "Tylko oczekująca sugestia może zostać odrzucona."
+
+#: src/game_list/games/views.py:1060
+msgid "Only a pending mapping can be accepted."
+msgstr "Tylko oczekujące mapowanie może zostać zaakceptowane."
+
+#: src/game_list/games/views.py:1078
+msgid "Only a pending mapping can be rejected."
+msgstr "Tylko oczekujące mapowanie może zostać odrzucone."
 
 #: src/game_list/moderation/masking.py:15
 msgid "This content has been removed for violating our community guidelines."
@@ -840,14 +920,6 @@ msgstr "powiadomienie"
 #: src/game_list/notifications/models.py:111
 msgid "notifications"
 msgstr "powiadomienia"
-
-#: src/game_list/settings/base.py:135
-msgid "English"
-msgstr "Angielski"
-
-#: src/game_list/settings/base.py:136
-msgid "Polish"
-msgstr "Polski"
 
 #: src/game_list/users/models.py:23
 msgid "Male"

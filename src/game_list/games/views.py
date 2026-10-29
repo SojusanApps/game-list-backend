@@ -33,6 +33,7 @@ from game_list.games.filters import (
     GenreFilterSet,
     PlatformFilterSet,
     PlayerPerspectiveFilterSet,
+    StoreMappingFilterSet,
     TranslationSuggestionFilterSet,
 )
 from game_list.games.models import (
@@ -52,10 +53,10 @@ from game_list.games.models import (
     Genre,
     Platform,
     PlayerPerspective,
+    StoreMapping,
     TranslationSuggestion,
 )
 from game_list.games.permissions import IsSuggestionSubmitter
-from game_list.games.search import ranked_title_match_pks
 from game_list.games.serializers import (
     CompanyDetailSerializer,
     CompanySerializer,
@@ -63,6 +64,7 @@ from game_list.games.serializers import (
     GameEngineSerializer,
     GameFollowCreateSerializer,
     GameFollowSerializer,
+    GameListBulkCreateItemSerializer,
     GameListCompareResponseSerializer,
     GameListCreateSerializer,
     GameListSerializer,
@@ -78,10 +80,25 @@ from game_list.games.serializers import (
     PlatformSerializer,
     PlayerPerspectiveSerializer,
     ReleaseCalendarQuerySerializer,
-    TitleImportRequestSerializer,
-    TitleImportResponseSerializer,
+    StoreImportRequestSerializer,
+    StoreImportResponseSerializer,
+    StoreLinkRequestSerializer,
+    StoreMappingCreateSerializer,
+    StoreMappingRefSerializer,
+    StoreMappingRejectSerializer,
+    StoreMappingSerializer,
+    StoreNotAGameRequestSerializer,
     TranslationSuggestionCreateSerializer,
     TranslationSuggestionSerializer,
+)
+from game_list.games.store_import import (
+    StoreEntry,
+    StoreLink,
+    accept_mapping,
+    create_accepted_mapping,
+    import_entries,
+    link_listed_games,
+    submit_pending_mapping,
 )
 from game_list.notifications.constants import NotificationCategory, NotificationVerb
 from game_list.notifications.utils import notify_send
@@ -92,11 +109,11 @@ if TYPE_CHECKING:
 
     from django.db.models import QuerySet
     from rest_framework.request import Request
+    from rest_framework.utils.serializer_helpers import ReturnDict
 
 
 HIGHEST_NUMBER_OF_DAYS_IN_MONTH = 31
 MAX_GAMES_PER_DAY_IN_CALENDAR = 3
-MAX_MATCHES_PER_IMPORTED_TITLE = 3
 
 
 @extend_schema_view(
@@ -381,57 +398,122 @@ class GameListViewSet(ModelViewSet[GameList]):
 
     @extend_schema(
         description=(
-            "Match a pasted list of game titles against the catalogue (Title Import, step 1). "
-            "For each input title, in input order, returns up to three candidate games ranked "
-            "best match first; a title whose candidates all fall below the matching threshold "
-            "gets an empty matches list. Candidates already on the authenticated user's game "
-            "list are flagged with already_in_list. Stores nothing; submit the picked games "
-            "to the bulk-create endpoint to add them to the game list."
+            "Import a store library read by the browser extension (Platform Sync). Each entry is matched by its "
+            "store id: first against IGDB's external games, then against accepted Store Mappings, then against "
+            "the user's own pending ones; an id that points at more than one game counts as unmatched. Matched "
+            "games that are not on the authenticated user's game list are added as Plan to Play, unscored, with "
+            "`owned_on` set to the store only for owned (not wishlisted) games. For a matched game already on the "
+            "list nothing changes except that an owned game's store is appended to `owned_on`. Unmatched entries "
+            "are returned so the client can run the title match step on them. Entries a Store Mapping marks as "
+            "not a game are skipped and returned as `skipped`."
         ),
-        request=TitleImportRequestSerializer,
-        responses={200: TitleImportResponseSerializer},
+        request=StoreImportRequestSerializer,
+        responses={200: StoreImportResponseSerializer},
     )
-    @action(detail=False, methods=["post"], url_path="title-import", filter_backends=[], pagination_class=None)
-    def title_import(self: Self, request: Request) -> Response:
-        """Return up to three catalogue candidates for each submitted game title."""
+    @action(detail=False, methods=["post"], url_path="store-import", filter_backends=[], pagination_class=None)
+    def store_import(self: Self, request: Request) -> Response:
+        """Auto-import the entries of a store library that can be matched by store id."""
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        request_serializer = TitleImportRequestSerializer(data=request.data)
+        request_serializer = StoreImportRequestSerializer(data=request.data)
         if not request_serializer.is_valid():
             return Response(request_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        titles: list[str] = request_serializer.validated_data["titles"]
+        entries = [StoreEntry(**entry) for entry in request_serializer.validated_data["entries"]]
 
-        matched_pks_per_title = [
-            ranked_title_match_pks(Game.objects.all(), title)[:MAX_MATCHES_PER_IMPORTED_TITLE] for title in titles
-        ]
-        matched_pks = {pk for pks in matched_pks_per_title for pk in pks}
-        games = Game.objects.in_bulk(matched_pks)
-        user_game_ids: set[int] = set(
-            GameList.objects.filter(user_id=request.user.pk, game_id__in=matched_pks).values_list(
-                "game_id",
-                flat=True,
-            ),
-        )
+        with transaction.atomic():
+            outcome = import_entries(entries, request.user)
 
-        results = [
+        games = Game.objects.in_bulk({game_id for _, game_id in (*outcome.imported, *outcome.already_added)})
+        serializer = StoreImportResponseSerializer(
             {
-                "title": title,
-                "matches": [
-                    {
-                        "id": pk,
-                        "title": games[pk].title,
-                        "cover_image_id": games[pk].cover_image_id,
-                        "already_in_list": pk in user_game_ids,
-                        "release_date": games[pk].release_date,
-                    }
-                    for pk in pks
+                "imported": [
+                    {"platform": entry.platform, "store_id": entry.store_id, "game": games[game_id]}
+                    for entry, game_id in outcome.imported
                 ],
-            }
-            for title, pks in zip(titles, matched_pks_per_title, strict=True)
-        ]
-        serializer = TitleImportResponseSerializer({"results": results})
+                "already_added": [
+                    {"platform": entry.platform, "store_id": entry.store_id, "game": games[game_id]}
+                    for entry, game_id in outcome.already_added
+                ],
+                "unmatched": [
+                    {
+                        "platform": entry.platform,
+                        "store_id": entry.store_id,
+                        "title": entry.title,
+                        "wishlisted": entry.wishlisted,
+                    }
+                    for entry in outcome.unmatched
+                ],
+                "skipped": [
+                    {
+                        "platform": entry.platform,
+                        "store_id": entry.store_id,
+                        "title": entry.title,
+                        "wishlisted": entry.wishlisted,
+                    }
+                    for entry in outcome.skipped
+                ],
+            },
+        )
         return Response(serializer.data)
+
+    @extend_schema(
+        description=(
+            "Match store entries by hand to games that are already on the authenticated user's game list. Each "
+            "match is recorded as a pending Store Mapping of the user, and for an owned (not wishlisted) entry "
+            "the store is appended to `owned_on`. Nothing else of the game list entry changes; a game that is "
+            "not on the list is ignored."
+        ),
+        request=StoreLinkRequestSerializer,
+        responses={204: None},
+    )
+    @action(detail=False, methods=["post"], url_path="store-link", filter_backends=[], pagination_class=None)
+    def store_link(self: Self, request: Request) -> Response:
+        """Link store entries to games the user already has."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = StoreLinkRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        links = [
+            StoreLink(
+                entry=StoreEntry(**{key: item[key] for key in ("platform", "store_id", "title", "wishlisted")}),
+                game=item["game"],
+            )
+            for item in serializer.validated_data["entries"]
+        ]
+        with transaction.atomic():
+            link_listed_games(links, request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        description=(
+            "Propose store items as not a game (a soundtrack, for example). Each becomes a pending Store "
+            "Mapping of the authenticated user: for them the store import skips the item at once, and for "
+            "everyone once an admin accepts it. Items an accepted mapping already covers are ignored."
+        ),
+        request=StoreNotAGameRequestSerializer,
+        responses={204: None},
+    )
+    @action(detail=False, methods=["post"], url_path="store-not-a-game", filter_backends=[], pagination_class=None)
+    def store_not_a_game(self: Self, request: Request) -> Response:
+        """Record the user's proposals that store items are not games."""
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = StoreNotAGameRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            for item in serializer.validated_data["entries"]:
+                submit_pending_mapping(
+                    request.user,
+                    (item["platform"], item["store_id"]),
+                    item["store_title"],
+                    None,
+                )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         description=(
@@ -455,10 +537,13 @@ class GameListViewSet(ModelViewSet[GameList]):
         description=(
             "Bulk-create game-list entries for the authenticated user. "
             "Accepts a list of objects each containing a game ID and play status. "
+            "An item that came from store libraries may also carry `store_refs` (each with platform, store_id "
+            "and store_title); the picked game is then recorded as a pending Store Mapping for the user "
+            "for every one of them. "
             "Returns the list of created game-list entries. "
             "This endpoint is useful for bulk-adding games to the user's list."
         ),
-        request=GameListCreateSerializer(many=True),
+        request=GameListBulkCreateItemSerializer(many=True),
         responses={201: GameListSerializer(many=True)},
     )
     @action(detail=False, methods=["post"], url_path="bulk-create", filter_backends=[], pagination_class=None)
@@ -469,15 +554,29 @@ class GameListViewSet(ModelViewSet[GameList]):
             return Response({"non_field_errors": ["This field may not be empty."]}, status=status.HTTP_400_BAD_REQUEST)
 
         serializers_list = []
+        store_refs: list[list[dict[str, Any]]] = []
         for item in items:
-            data = {**item, "owned_on": item.get("owned_on", [])}
+            data = {key: value for key, value in item.items() if key != "store_refs"}
+            data["owned_on"] = item.get("owned_on", [])
             serializer = GameListCreateSerializer(data=data, context=self.get_serializer_context())
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializers_list.append(serializer)
+            ref_serializer = StoreMappingRefSerializer(data=item.get("store_refs") or [], many=True)
+            if not ref_serializer.is_valid():
+                return Response({"store_refs": ref_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            store_refs.append([dict(ref) for ref in ref_serializer.validated_data])
 
         with transaction.atomic():
             instances = [s.save() for s in serializers_list]
+            for instance, refs in zip(instances, store_refs, strict=True):
+                for store_ref in refs:
+                    submit_pending_mapping(
+                        cast("User", request.user),
+                        (store_ref["platform"], store_ref["store_id"]),
+                        store_ref["store_title"],
+                        instance.game,
+                    )
 
         result = GameListSerializer(instances, many=True, context=self.get_serializer_context())
         return Response(result.data, status=status.HTTP_201_CREATED)
@@ -850,6 +949,117 @@ class TranslationSuggestionViewSet(
 
         serializer = self.get_serializer(suggestion)
         return Response(serializer.data)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        description=(
+            "List store mappings (admin only), pending ones for review as well as accepted and rejected ones. "
+            "Filter by status, platform, store id, game or submitter."
+        ),
+        parameters=[
+            OpenApiParameter(name="id", description="Filter by exact store mapping ID."),
+            OpenApiParameter(
+                name="platform",
+                description="Filter by store. Accepted values: steam, epic, gog, playstation, nintendo.",
+            ),
+            OpenApiParameter(name="store_id", description="Filter by the store's own identifier of the game."),
+            OpenApiParameter(name="game", description="Filter by the ID of the game the store id is mapped to."),
+            OpenApiParameter(
+                name="status",
+                description="Filter by lifecycle status. Accepted values: pending, accepted, rejected.",
+            ),
+            OpenApiParameter(
+                name="submitted_by",
+                description="Filter by the ID of the user who submitted the mapping.",
+            ),
+            OpenApiParameter(
+                name="not_a_game",
+                description="Filter mappings that mark a store item as not a game (true) or map it to a game (false).",
+            ),
+        ],
+    ),
+    retrieve=extend_schema(description="Retrieve a single store mapping (admin only)."),
+    create=extend_schema(
+        description=(
+            "Create a store mapping by hand (admin only), to a game or marked `not_a_game` (a soundtrack, for "
+            "example) so imports skip the store item. It is accepted at once and supersedes the store "
+            "id's previous accepted mapping; other pending mappings for the same store id are rejected."
+        ),
+        request=StoreMappingCreateSerializer,
+        responses={201: StoreMappingSerializer},
+    ),
+)
+class StoreMappingViewSet(GenericViewSet[StoreMapping], ListModelMixin, RetrieveModelMixin):
+    """A ViewSet for reviewing and creating store mappings."""
+
+    queryset = StoreMapping.objects.select_related("game", "submitted_by", "reviewed_by")
+    permission_classes = (IsAdminUser,)
+    filterset_class = StoreMappingFilterSet
+
+    def get_serializer_class(self: Self) -> type[StoreMappingCreateSerializer | StoreMappingSerializer]:
+        """Get the serializer class for the store mapping viewset."""
+        return StoreMappingCreateSerializer if self.action == "create" else StoreMappingSerializer
+
+    def _serialize(self: Self, mapping: StoreMapping) -> ReturnDict[str, Any]:
+        """Serialize a store mapping for a response."""
+        return StoreMappingSerializer(mapping, context=self.get_serializer_context()).data
+
+    def create(self: Self, request: Request) -> Response:
+        """Create an accepted store mapping on behalf of the admin."""
+        serializer = StoreMappingCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mapping = create_accepted_mapping(
+            cast("User", request.user),
+            serializer.validated_data["platform"],
+            serializer.validated_data["store_id"],
+            serializer.validated_data.get("store_title", ""),
+            serializer.validated_data.get("game"),
+        )
+        return Response(self._serialize(mapping), status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        description=(
+            "Accept a pending store mapping, making it global. It supersedes the store id's previous "
+            "accepted mapping and rejects the other pending mappings for the same store id. "
+            "Game lists that already exist are not changed."
+        ),
+        request=None,
+        responses={200: StoreMappingSerializer},
+    )
+    @action(detail=True, methods=["post"])
+    def accept(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Accept a pending store mapping."""
+        mapping = self.get_object()
+        if mapping.status != StoreMapping.Status.PENDING:
+            message = _("Only a pending mapping can be accepted.")
+            raise ValidationError(message)
+        accept_mapping(mapping, cast("User", request.user))
+        return Response(self._serialize(mapping))
+
+    @extend_schema(
+        description=(
+            "Reject a pending store mapping, optionally with a reason. The mapping stops applying to its "
+            "submitter. Game lists that already exist are not changed."
+        ),
+        request=StoreMappingRejectSerializer,
+        responses={200: StoreMappingSerializer},
+    )
+    @action(detail=True, methods=["post"])
+    def reject(self: Self, request: Request, pk: str | None = None) -> Response:  # noqa: ARG002
+        """Reject a pending store mapping."""
+        mapping = self.get_object()
+        if mapping.status != StoreMapping.Status.PENDING:
+            message = _("Only a pending mapping can be rejected.")
+            raise ValidationError(message)
+        reason_serializer = StoreMappingRejectSerializer(data=request.data)
+        reason_serializer.is_valid(raise_exception=True)
+        mapping.status = StoreMapping.Status.REJECTED
+        mapping.reviewed_by = cast("User", request.user)
+        mapping.reviewed_at = timezone.now()
+        mapping.rejection_reason = reason_serializer.validated_data["rejection_reason"]
+        mapping.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason"])
+        return Response(self._serialize(mapping))
 
 
 @extend_schema_view(
