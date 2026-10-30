@@ -419,10 +419,14 @@ def test_game_follow_list_stays_authenticated_only(
             "games:game-medias-list",
             "game_media_fixture",
             {
-                "count": 7,
+                "count": 8,
                 "next": None,
                 "previous": None,
                 "results": [
+                    {
+                        "id": ANY,
+                        "name": ANY,
+                    },
                     {
                         "id": ANY,
                         "name": ANY,
@@ -1032,7 +1036,7 @@ def test_game_follow_update_not_allowed(
         pytest.param(
             "games:game-medias-detail",
             "game_media_fixture",
-            6,
+            7,
             "admin_authenticated_api_client",
             id="Delete the game media.",
         ),
