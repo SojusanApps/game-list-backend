@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from django.db.models import F, Q, QuerySet, Value
+from django.db.models import F, OuterRef, Q, QuerySet, Subquery, Value
 from django.db.models.functions import Coalesce, NullIf
 from django_filters import rest_framework as filters
 from modeltranslation.utils import build_localized_fieldname, get_language
@@ -26,6 +26,7 @@ from game_list.games.models import (
     Platform,
     PlayerPerspective,
     ReviewLanguage,
+    StoreMapping,
     TranslationSuggestion,
 )
 from game_list.games.search import filter_queryset_by_title
@@ -185,6 +186,29 @@ class GameReviewFilterSet(filters.FilterSet):
     recommendation = filters.ChoiceFilter(choices=GameReviewRecommendation.choices)
     language = filters.ChoiceFilter(choices=ReviewLanguage.choices)
 
+    ordering = filters.OrderingFilter(
+        fields=(("created_at", "created_at"), ("score", "score")),
+        method="filter_ordering",
+    )
+
+    def filter_ordering(self, queryset: QuerySet[Any], _name: str, value: list[str]) -> QuerySet[Any]:
+        """Order by the requested `created_at` and/or `score` keys, in the order given.
+
+        The score is the reviewer's score for the reviewed game from their game list. Reviews whose author has not
+        scored the game always come last, whatever the score direction. Newest reviews win ties; `id` is always the
+        last key, so pages stay stable.
+        """
+        reviewer_score = GameList.objects.filter(user=OuterRef("user"), game=OuterRef("game")).values("score")[:1]
+        queryset = queryset.annotate(reviewer_score=Subquery(reviewer_score))
+        sort_keys = {"created_at": F("created_at"), "score": F("reviewer_score")}
+        ordering = []
+        for term in value:
+            key = sort_keys[term.removeprefix("-")]
+            ordering.append(key.desc(nulls_last=True) if term.startswith("-") else key.asc(nulls_last=True))
+        if not any(term.removeprefix("-") == "created_at" for term in value):
+            ordering.append(F("created_at").desc())
+        return queryset.order_by(*ordering, "id")
+
     class Meta:
         """Meta class for game review filter set."""
 
@@ -270,6 +294,7 @@ class GameFilterSet(filters.FilterSet):
         model = Game
         fields = (
             "id",
+            "igdb_id",
             "title",
             "release_date",
             "publisher",
@@ -397,6 +422,27 @@ class TranslationSuggestionFilterSet(filters.FilterSet):
             "id",
             "game",
             "field",
+            "status",
+            "submitted_by",
+        )
+
+
+class StoreMappingFilterSet(filters.FilterSet):
+    """Filter set for store mapping model."""
+
+    game = filters.NumberFilter(field_name="game__id")
+    submitted_by = filters.NumberFilter(field_name="submitted_by__id")
+
+    class Meta:
+        """Meta class for store mapping filter set."""
+
+        model = StoreMapping
+        fields = (
+            "id",
+            "platform",
+            "store_id",
+            "game",
+            "not_a_game",
             "status",
             "submitted_by",
         )

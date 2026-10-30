@@ -620,6 +620,124 @@ class TranslationSuggestion(BaseModel):
         return f"{self.game.title} - {self.field} ({self.status})"
 
 
+class StorePlatform(models.TextChoices):
+    """The stores a game list can be imported from with the browser extension."""
+
+    STEAM = "steam", _("Steam")
+    EPIC = "epic", _("Epic Games Store")
+    GOG = "gog", _("GOG")
+    PLAYSTATION = "playstation", _("PlayStation Store")
+    NINTENDO = "nintendo", _("Nintendo eShop")
+
+
+class StoreMappingStatus(models.TextChoices):
+    """The lifecycle states of a store mapping."""
+
+    PENDING = "pending", _("Pending")
+    ACCEPTED = "accepted", _("Accepted")
+    REJECTED = "rejected", _("Rejected")
+
+
+class StoreMapping(BaseModel):
+    """A link from one game on one store to a Game, used to match imported store libraries."""
+
+    Platform = StorePlatform
+    Status = StoreMappingStatus
+
+    platform = models.CharField(
+        _("platform"),
+        max_length=20,
+        choices=StorePlatform.choices,
+        help_text="The store the game is listed on.",
+    )
+    store_id = models.CharField(
+        _("store id"),
+        max_length=255,
+        help_text="The store's own identifier of the game.",
+    )
+    store_title = models.CharField(
+        _("store title"),
+        max_length=255,
+        blank=True,
+        help_text="A snapshot of the game's title on the store, as sent by the browser extension.",
+    )
+    game = models.ForeignKey(
+        "Game",
+        on_delete=models.CASCADE,
+        related_name="store_mappings",
+        null=True,
+        blank=True,
+        help_text="The game this store id is mapped to; empty when the store item is marked as not a game.",
+    )
+    not_a_game = models.BooleanField(
+        _("not a game"),
+        default=False,
+        help_text="Marks the store item as not a game (a soundtrack, for example) so imports skip it.",
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="store_mappings",
+        help_text="The user who submitted this mapping, or the admin who created it.",
+    )
+    status = models.CharField(
+        _("status"),
+        max_length=10,
+        choices=StoreMappingStatus.choices,
+        default=StoreMappingStatus.PENDING,
+        help_text="The current lifecycle state of this mapping.",
+    )
+    submitted_at = models.DateTimeField(_("submitted at"), auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_store_mappings",
+        null=True,
+        blank=True,
+        help_text="The admin who accepted or rejected this mapping.",
+    )
+    reviewed_at = models.DateTimeField(
+        _("reviewed at"),
+        null=True,
+        blank=True,
+        help_text="The time this mapping was accepted or rejected.",
+    )
+    rejection_reason = models.CharField(
+        _("rejection reason"),
+        max_length=500,
+        blank=True,
+        help_text="Optional reason given when this mapping was rejected or superseded.",
+    )
+
+    class Meta(BaseModel.Meta):
+        """Meta data for the store mapping model."""
+
+        verbose_name = _("store mapping")
+        verbose_name_plural = _("store mappings")
+        indexes: ClassVar[list[models.Index]] = [models.Index(fields=("platform", "store_id"))]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                condition=models.Q(not_a_game=True, game__isnull=True) | models.Q(not_a_game=False, game__isnull=False),
+                name="store_mapping_game_xor_not_a_game",
+            ),
+            models.UniqueConstraint(
+                fields=("platform", "store_id"),
+                condition=models.Q(status=StoreMappingStatus.ACCEPTED),
+                name="unique_accepted_store_mapping_per_store_id",
+            ),
+            models.UniqueConstraint(
+                fields=("platform", "store_id", "submitted_by"),
+                condition=models.Q(status=StoreMappingStatus.PENDING),
+                name="unique_pending_store_mapping_per_user_store_id",
+            ),
+        ]
+
+    def __str__(self: Self) -> str:
+        """String representation of the store mapping model."""
+        target = self.game.title if self.game else "not a game"
+        return f"{self.platform}:{self.store_id} -> {target} ({self.status})"
+
+
 class Game(BaseModel, IGDBModel):
     """A model containing data about games."""
 

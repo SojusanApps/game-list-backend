@@ -87,3 +87,16 @@ def test_filter_gamelist_by_developer_matches_bilingual_name(
     ids = [entry["id"] for entry in response.json()["results"]]
     assert matching_entry.id in ids
     assert len(ids) == 1
+
+
+@pytest.mark.django_db()
+def test_filter_games_by_igdb_id(api_client: APIClient) -> None:
+    """Filtering games by igdb_id returns only the game with that IGDB id."""
+    matching_game = baker.make(Game, igdb_id=1234)
+    baker.make(Game, igdb_id=5678)
+
+    response = api_client.get(reverse("games:games-list"), {"igdb_id": 1234})
+
+    assert response.status_code == status.HTTP_200_OK
+    ids = [entry["id"] for entry in response.json()["results"]]
+    assert ids == [matching_game.id]
