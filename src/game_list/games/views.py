@@ -732,6 +732,16 @@ class GameReviewPagination(PageNumberPagination):
                 name="user",
                 description="Filter by reviewer user ID.",
             ),
+            OpenApiParameter(
+                name="ordering",
+                description=(
+                    "Order results by field. "
+                    "Accepted values: created_at, -created_at, score, -score. "
+                    "Use `-created_at` for newest first and `-score` for the reviewer's highest score first. "
+                    "Reviews whose author has not scored the game always come last when ordering by score. "
+                    "Prefix with '-' for descending."
+                ),
+            ),
         ],
     ),
     create=extend_schema(
@@ -1075,6 +1085,10 @@ class StoreMappingViewSet(GenericViewSet[StoreMapping], ListModelMixin, Retrieve
             OpenApiParameter(
                 name="id",
                 description="Filter by exact game ID.",
+            ),
+            OpenApiParameter(
+                name="igdb_id",
+                description="Filter by the game's IGDB identifier.",
             ),
             OpenApiParameter(
                 name="title",

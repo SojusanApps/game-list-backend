@@ -2,8 +2,9 @@
 
 > Date format is DD.MM.YYYY.
 
-## v. [6.1.0] - 29.10.2026
+## v. [6.1.0] - 30.10.2026
 
+* Added the `ordering` parameter to `GET /game-reviews/`: `created_at` / `-created_at` (newest first) and `score` / `-score` (the reviewer's score for the game; unscored reviews always come last).
 * [BREAKING] Removed the title import endpoint `POST /game-lists/title-import/` (the frontend no longer uses it) together with `TitleImportRequestSerializer`, `TitleImportMatchSerializer`, `TitleImportResultSerializer`, `TitleImportResponseSerializer` and the Bruno request for it.
 * Added the store import endpoint `POST /game-lists/store-import/`. The browser extension now reads the store id of each game; the endpoint matches every entry by `platform` and `store_id` against IGDB's external games, then against accepted Store Mappings, then against the user's own pending ones. Matched games are added to the game list as Plan to Play, unscored, with `owned_on` set to the store for owned (not wishlisted) games; for a game already on the list only the store is appended to `owned_on`. Entries that cannot be matched (or whose id points at several games) are returned as `unmatched` for the title match step. At most 5000 entries per request.
 * Added the `StoreMapping` model: a link from a store game (`platform` plus `store_id`) to a `Game`, with a pending, accepted or rejected lifecycle like Translation Suggestions. A pending mapping applies only to its submitter until an admin accepts it; accepting supersedes the previous accepted mapping and rejects the other pending ones. Registered in the Django admin.

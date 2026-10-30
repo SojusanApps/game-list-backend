@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-27 17:36+0000\n"
+"POT-Creation-Date: 2026-10-30 06:28+0000\n"
 "PO-Revision-Date: 2022-08-11 18:47+0000\n"
 "Last-Translator:   <>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -292,7 +292,7 @@ msgstr "Ukończone"
 
 #: src/game_list/games/models.py:140
 msgid "Plan to play"
-msgstr "Planuję zagrać"
+msgstr "Planowane"
 
 #: src/game_list/games/models.py:141
 msgid "Playing"
@@ -626,45 +626,45 @@ msgstr "tytuł wyszukiwania"
 msgid "games"
 msgstr "gry"
 
-#: src/game_list/games/serializers.py:599
+#: src/game_list/games/serializers.py:554
 #, python-format
 msgid "Ensure this field has no more than %(max_length)s characters."
 msgstr "To pole nie może zawierać więcej niż %(max_length)s znaków."
 
-#: src/game_list/games/serializers.py:611
+#: src/game_list/games/serializers.py:566
 msgid "You already have a pending suggestion for this game and field."
 msgstr "Masz już oczekującą sugestię dla tej gry i tego pola."
 
-#: src/game_list/games/serializers.py:659
+#: src/game_list/games/serializers.py:614
 #, python-format
 msgid "Ensure this field has no more than %(max)s entries."
 msgstr "To pole nie może zawierać więcej niż %(max)s elementów."
 
-#: src/game_list/games/serializers.py:759
+#: src/game_list/games/serializers.py:729
 msgid "A store item marked as not a game cannot be mapped to a game."
 msgstr "Element sklepu oznaczony jako nie-gra nie może być zmapowany na grę."
 
-#: src/game_list/games/serializers.py:762
+#: src/game_list/games/serializers.py:732
 msgid "Choose a game, or mark the store item as not a game."
 msgstr "Wybierz grę lub oznacz element sklepu jako nie-gra."
 
-#: src/game_list/games/views.py:890
+#: src/game_list/games/views.py:875
 msgid "Only a pending suggestion can be withdrawn."
 msgstr "Tylko oczekująca sugestia może zostać wycofana."
 
-#: src/game_list/games/views.py:909
+#: src/game_list/games/views.py:894
 msgid "Only a pending suggestion can be accepted."
 msgstr "Tylko oczekująca sugestia może zostać zaakceptowana."
 
-#: src/game_list/games/views.py:956
+#: src/game_list/games/views.py:941
 msgid "Only a pending suggestion can be rejected."
 msgstr "Tylko oczekująca sugestia może zostać odrzucona."
 
-#: src/game_list/games/views.py:1060
+#: src/game_list/games/views.py:1045
 msgid "Only a pending mapping can be accepted."
 msgstr "Tylko oczekujące mapowanie może zostać zaakceptowane."
 
-#: src/game_list/games/views.py:1078
+#: src/game_list/games/views.py:1063
 msgid "Only a pending mapping can be rejected."
 msgstr "Tylko oczekujące mapowanie może zostać odrzucone."
 
