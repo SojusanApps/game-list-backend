@@ -111,27 +111,23 @@ def _not_a_game_keys(keys: set[StoreKey], user: User) -> set[StoreKey]:
 def resolve_games(keys: Iterable[StoreKey], user: User) -> dict[StoreKey, int]:
     """Map each store key to exactly one game id; keys with no match or an ambiguous one are left out.
 
-    Resolution order is IGDB external games, then accepted Store Mappings, then the user's own pending
-    mappings. IGDB decides only when it links the key to exactly one game; when it links several, it is treated as
-    not knowing the key so that a Store Mapping can settle it. For the mapping sources, the first one that knows
-    the key decides: if it points at several games, the key is ambiguous.
+    Resolution order is accepted Store Mappings, then the user's own pending mappings, then IGDB external games, so
+    that a mapping can correct what IGDB says. The first source that knows the key decides: if it points at several
+    games, the key is ambiguous and left unmatched.
     """
     pending = set(keys)
     resolved: dict[StoreKey, int] = {}
-    lookups: tuple[tuple[Callable[[set[StoreKey]], dict[StoreKey, set[int]]], bool], ...] = (
-        (_igdb_matches, False),
-        (lambda remaining: _mapping_matches(remaining, user, accepted=True), True),
-        (lambda remaining: _mapping_matches(remaining, user, accepted=False), True),
+    lookups: tuple[Callable[[set[StoreKey]], dict[StoreKey, set[int]]], ...] = (
+        lambda remaining: _mapping_matches(remaining, user, accepted=True),
+        lambda remaining: _mapping_matches(remaining, user, accepted=False),
+        _igdb_matches,
     )
-    for lookup, decides_when_ambiguous in lookups:
+    for lookup in lookups:
         if not pending:
             break
-        matches = lookup(pending)
-        for key, game_ids in matches.items():
+        for key, game_ids in lookup(pending).items():
             if len(game_ids) == 1:
                 resolved[key] = next(iter(game_ids))
-            elif not decides_when_ambiguous:
-                continue
             pending.discard(key)
     return resolved
 

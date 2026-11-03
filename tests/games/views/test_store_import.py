@@ -209,11 +209,11 @@ def test_store_import_id_matching_several_games_is_unmatched(api_client: APIClie
 
 
 @pytest.mark.django_db()
-def test_store_import_accepted_mapping_settles_id_ambiguous_in_igdb(
+def test_store_import_accepted_mapping_wins_over_id_ambiguous_in_igdb(
     api_client: APIClient,
     user_fixture: UserModel,
 ) -> None:
-    """An id IGDB links to several games falls through to an accepted Store Mapping."""
+    """An accepted Store Mapping settles an id IGDB links to several games."""
     first, second = baker.make(Game, _quantity=2)
     _link_igdb("Steam", "220", first, second)
     baker.make(StoreMapping, platform="steam", store_id="220", game=second, status=StoreMapping.Status.ACCEPTED)
@@ -225,11 +225,11 @@ def test_store_import_accepted_mapping_settles_id_ambiguous_in_igdb(
 
 
 @pytest.mark.django_db()
-def test_store_import_pending_mapping_settles_id_ambiguous_in_igdb(
+def test_store_import_pending_mapping_wins_over_id_ambiguous_in_igdb(
     api_client: APIClient,
     user_fixture: UserModel,
 ) -> None:
-    """An id IGDB links to several games falls through to the user's own pending Store Mapping."""
+    """The user's own pending Store Mapping settles an id IGDB links to several games."""
     first, second = baker.make(Game, _quantity=2)
     _link_igdb("Steam", "220", first, second)
     baker.make(
@@ -269,16 +269,59 @@ def test_submit_pending_mapping_skipped_when_igdb_links_only_the_picked_game(use
 
 
 @pytest.mark.django_db()
-def test_store_import_igdb_wins_over_store_mapping(api_client: APIClient, user_fixture: UserModel) -> None:
-    """IGDB is consulted before Store Mappings."""
+def test_store_import_accepted_mapping_wins_over_igdb(api_client: APIClient, user_fixture: UserModel) -> None:
+    """An accepted Store Mapping overrides the single game IGDB links the id to (e.g. a mobile port of a PC game)."""
+    igdb_game, mapped_game = baker.make(Game, _quantity=2)
+    _link_igdb("Epic Games", "alien", igdb_game)
+    baker.make(StoreMapping, platform="epic", store_id="alien", game=mapped_game, status=StoreMapping.Status.ACCEPTED)
+    api_client.force_authenticate(user=user_fixture)
+
+    body = _post(api_client, [_entry("alien", platform="epic")]).json()
+
+    assert [item["game"]["id"] for item in body["imported"]] == [mapped_game.pk]
+
+
+@pytest.mark.django_db()
+def test_store_import_own_pending_mapping_wins_over_igdb(api_client: APIClient, user_fixture: UserModel) -> None:
+    """The user's own pending Store Mapping overrides the single game IGDB links the id to."""
     igdb_game, mapped_game = baker.make(Game, _quantity=2)
     _link_igdb("Steam", "220", igdb_game)
-    baker.make(StoreMapping, platform="steam", store_id="220", game=mapped_game, status=StoreMapping.Status.ACCEPTED)
+    baker.make(
+        StoreMapping,
+        platform="steam",
+        store_id="220",
+        game=mapped_game,
+        submitted_by=user_fixture,
+        status=StoreMapping.Status.PENDING,
+    )
     api_client.force_authenticate(user=user_fixture)
 
     body = _post(api_client, [_entry("220")]).json()
 
-    assert [item["game"]["id"] for item in body["imported"]] == [igdb_game.pk]
+    assert [item["game"]["id"] for item in body["imported"]] == [mapped_game.pk]
+
+
+@pytest.mark.django_db()
+def test_store_import_accepted_mapping_wins_over_pending_mapping(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """An accepted mapping is consulted before the user's own pending one."""
+    accepted_game, pending_game = baker.make(Game, _quantity=2)
+    baker.make(StoreMapping, platform="steam", store_id="220", game=accepted_game, status=StoreMapping.Status.ACCEPTED)
+    baker.make(
+        StoreMapping,
+        platform="steam",
+        store_id="220",
+        game=pending_game,
+        submitted_by=user_fixture,
+        status=StoreMapping.Status.PENDING,
+    )
+    api_client.force_authenticate(user=user_fixture)
+
+    body = _post(api_client, [_entry("220")]).json()
+
+    assert [item["game"]["id"] for item in body["imported"]] == [accepted_game.pk]
 
 
 @pytest.mark.django_db()
