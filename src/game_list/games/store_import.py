@@ -112,22 +112,26 @@ def resolve_games(keys: Iterable[StoreKey], user: User) -> dict[StoreKey, int]:
     """Map each store key to exactly one game id; keys with no match or an ambiguous one are left out.
 
     Resolution order is IGDB external games, then accepted Store Mappings, then the user's own pending
-    mappings. The first source that knows the key decides: if it points at several games, the key is ambiguous.
+    mappings. IGDB decides only when it links the key to exactly one game; when it links several, it is treated as
+    not knowing the key so that a Store Mapping can settle it. For the mapping sources, the first one that knows
+    the key decides: if it points at several games, the key is ambiguous.
     """
     pending = set(keys)
     resolved: dict[StoreKey, int] = {}
-    lookups: tuple[Callable[[set[StoreKey]], dict[StoreKey, set[int]]], ...] = (
-        _igdb_matches,
-        lambda remaining: _mapping_matches(remaining, user, accepted=True),
-        lambda remaining: _mapping_matches(remaining, user, accepted=False),
+    lookups: tuple[tuple[Callable[[set[StoreKey]], dict[StoreKey, set[int]]], bool], ...] = (
+        (_igdb_matches, False),
+        (lambda remaining: _mapping_matches(remaining, user, accepted=True), True),
+        (lambda remaining: _mapping_matches(remaining, user, accepted=False), True),
     )
-    for lookup in lookups:
+    for lookup, decides_when_ambiguous in lookups:
         if not pending:
             break
         matches = lookup(pending)
         for key, game_ids in matches.items():
             if len(game_ids) == 1:
                 resolved[key] = next(iter(game_ids))
+            elif not decides_when_ambiguous:
+                continue
             pending.discard(key)
     return resolved
 
@@ -233,13 +237,13 @@ def submit_pending_mapping(user: User, entry: StoreKey, store_title: str, game: 
     """Record the user's own pick of a game for a store id as a pending Store Mapping.
 
     A None game proposes the store item as not a game. Returns None when nothing needs recording: an accepted
-    mapping already knows the store id, or IGDB already links it to the picked game. A previous pending mapping of
-    the same user for the same store id is replaced.
+    mapping already knows the store id, or IGDB links it to the picked game and to no other. A previous pending
+    mapping of the same user for the same store id is replaced.
     """
     platform, store_id = entry
     if StoreMapping.objects.filter(platform=platform, store_id=store_id, status=StoreMapping.Status.ACCEPTED).exists():
         return None
-    if game is not None and game.pk in _igdb_matches({entry}).get(entry, set()):
+    if game is not None and _igdb_matches({entry}).get(entry) == {game.pk}:
         return None
     mapping, _ = StoreMapping.objects.update_or_create(
         platform=platform,

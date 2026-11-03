@@ -16,6 +16,7 @@ from game_list.games.models import (
     GameMedia,
     StoreMapping,
 )
+from game_list.games.store_import import submit_pending_mapping
 
 if TYPE_CHECKING:
     from typing import Any
@@ -205,6 +206,66 @@ def test_store_import_id_matching_several_games_is_unmatched(api_client: APIClie
 
     assert len(body["unmatched"]) == 1
     assert not GameList.objects.filter(user=user_fixture).exists()
+
+
+@pytest.mark.django_db()
+def test_store_import_accepted_mapping_settles_id_ambiguous_in_igdb(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """An id IGDB links to several games falls through to an accepted Store Mapping."""
+    first, second = baker.make(Game, _quantity=2)
+    _link_igdb("Steam", "220", first, second)
+    baker.make(StoreMapping, platform="steam", store_id="220", game=second, status=StoreMapping.Status.ACCEPTED)
+    api_client.force_authenticate(user=user_fixture)
+
+    body = _post(api_client, [_entry("220")]).json()
+
+    assert [item["game"]["id"] for item in body["imported"]] == [second.pk]
+
+
+@pytest.mark.django_db()
+def test_store_import_pending_mapping_settles_id_ambiguous_in_igdb(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """An id IGDB links to several games falls through to the user's own pending Store Mapping."""
+    first, second = baker.make(Game, _quantity=2)
+    _link_igdb("Steam", "220", first, second)
+    baker.make(
+        StoreMapping,
+        platform="steam",
+        store_id="220",
+        game=first,
+        submitted_by=user_fixture,
+        status=StoreMapping.Status.PENDING,
+    )
+    api_client.force_authenticate(user=user_fixture)
+
+    body = _post(api_client, [_entry("220")]).json()
+
+    assert [item["game"]["id"] for item in body["imported"]] == [first.pk]
+
+
+@pytest.mark.django_db()
+def test_submit_pending_mapping_is_recorded_for_id_ambiguous_in_igdb(user_fixture: UserModel) -> None:
+    """Picking one of the games IGDB links the id to still records a pending mapping, as IGDB cannot settle it."""
+    first, second = baker.make(Game, _quantity=2)
+    _link_igdb("Steam", "220", first, second)
+
+    mapping = submit_pending_mapping(user_fixture, ("steam", "220"), "Some game", first)
+
+    assert mapping is not None
+    assert mapping.game == first
+
+
+@pytest.mark.django_db()
+def test_submit_pending_mapping_skipped_when_igdb_links_only_the_picked_game(user_fixture: UserModel) -> None:
+    """Nothing is recorded when IGDB already links the id to exactly the picked game."""
+    game: Game = baker.make(Game)
+    _link_igdb("Steam", "220", game)
+
+    assert submit_pending_mapping(user_fixture, ("steam", "220"), "Some game", game) is None
 
 
 @pytest.mark.django_db()
