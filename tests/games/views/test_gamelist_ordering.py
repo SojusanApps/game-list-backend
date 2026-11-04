@@ -1,9 +1,11 @@
-"""Tests for ordering the game-lists API endpoint by the owner's score."""
+"""Tests for ordering the game-lists API endpoint by score, title, added and last modified time."""
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -275,7 +277,7 @@ def test_ordering_by_score_is_available_to_authenticated_users(
 
 @pytest.mark.django_db()
 def test_ordering_by_unknown_field_is_rejected(api_client: APIClient, user_fixture: UserModel) -> None:
-    """Only `score` and `title` (with an optional `-` prefix) are accepted orderings."""
+    """Only the documented keys (with an optional `-` prefix) are accepted orderings."""
     _entry(user_fixture, "Any", 5)
 
     response = api_client.get(reverse("games:game-lists-list"), {"ordering": "playtime"})
@@ -293,3 +295,113 @@ def test_default_order_is_unchanged_without_ordering_param(api_client: APIClient
     response = api_client.get(reverse("games:game-lists-list"))
 
     assert _ids(response) == [first.id, second.id]
+
+
+def _set_times(entry: GameList, *, days_ago_created: int, days_ago_modified: int) -> None:
+    """Pin `created_at` and `last_modified_at`, which are set automatically on save."""
+    now = timezone.now()
+    GameList.objects.filter(pk=entry.pk).update(
+        created_at=now - timedelta(days=days_ago_created),
+        last_modified_at=now - timedelta(days=days_ago_modified),
+    )
+
+
+@pytest.mark.django_db()
+@pytest.mark.parametrize(
+    ("ordering", "expected"),
+    [("created_at", ["old", "mid", "new"]), ("-created_at", ["new", "mid", "old"])],
+)
+def test_ordering_by_created_at(
+    api_client: APIClient,
+    user_fixture: UserModel,
+    ordering: str,
+    expected: list[str],
+) -> None:
+    """`created_at` orders by when the entry was added, oldest first; `-created_at` lists the newest first."""
+    entries = {name: _entry(user_fixture, name, 5) for name in ("mid", "new", "old")}
+    _set_times(entries["old"], days_ago_created=30, days_ago_modified=1)
+    _set_times(entries["mid"], days_ago_created=20, days_ago_modified=2)
+    _set_times(entries["new"], days_ago_created=10, days_ago_modified=3)
+
+    response = api_client.get(reverse("games:game-lists-list"), {"ordering": ordering})
+
+    assert response.status_code == status.HTTP_200_OK
+    assert _ids(response) == [entries[name].id for name in expected]
+
+
+@pytest.mark.django_db()
+@pytest.mark.parametrize(
+    ("ordering", "expected"),
+    [("last_modified_at", ["stale", "mid", "touched"]), ("-last_modified_at", ["touched", "mid", "stale"])],
+)
+def test_ordering_by_last_modified_at(
+    api_client: APIClient,
+    user_fixture: UserModel,
+    ordering: str,
+    expected: list[str],
+) -> None:
+    """`last_modified_at` orders by the last edit, independent of when the entry was added."""
+    entries = {name: _entry(user_fixture, name, 5) for name in ("mid", "stale", "touched")}
+    _set_times(entries["stale"], days_ago_created=1, days_ago_modified=30)
+    _set_times(entries["mid"], days_ago_created=2, days_ago_modified=20)
+    _set_times(entries["touched"], days_ago_created=3, days_ago_modified=10)
+
+    response = api_client.get(reverse("games:game-lists-list"), {"ordering": ordering})
+
+    assert _ids(response) == [entries[name].id for name in expected]
+
+
+@pytest.mark.django_db()
+def test_editing_an_entry_moves_it_to_the_top_of_last_modified_but_not_added(
+    api_client: APIClient,
+    user_fixture: UserModel,
+) -> None:
+    """Saving an entry bumps `last_modified_at` while `created_at` stays fixed."""
+    older = _entry(user_fixture, "Older", 5)
+    newer = _entry(user_fixture, "Newer", 5)
+    _set_times(older, days_ago_created=10, days_ago_modified=10)
+    _set_times(newer, days_ago_created=5, days_ago_modified=5)
+    older.refresh_from_db()
+    older.score = 6
+    older.save()
+
+    added = api_client.get(reverse("games:game-lists-list"), {"ordering": "-created_at"})
+    modified = api_client.get(reverse("games:game-lists-list"), {"ordering": "-last_modified_at"})
+
+    assert _ids(added) == [newer.id, older.id]
+    assert _ids(modified) == [older.id, newer.id]
+
+
+@pytest.mark.django_db()
+@pytest.mark.parametrize("ordering", ["created_at", "-created_at", "last_modified_at", "-last_modified_at"])
+def test_ordering_by_time_breaks_ties_by_title_ascending(
+    api_client: APIClient,
+    user_fixture: UserModel,
+    ordering: str,
+) -> None:
+    """Entries with the same timestamp are ordered by game title A-Z in either direction."""
+    zelda = _entry(user_fixture, "Zelda", 5)
+    alpha = _entry(user_fixture, "Alpha", 5)
+    mario = _entry(user_fixture, "Mario", 5)
+    now = timezone.now()
+    GameList.objects.update(created_at=now, last_modified_at=now)
+
+    response = api_client.get(reverse("games:game-lists-list"), {"ordering": ordering})
+
+    assert _ids(response) == [alpha.id, mario.id, zelda.id]
+
+
+@pytest.mark.django_db()
+def test_ordering_by_created_at_applies_to_other_users_lists(api_client: APIClient, user_fixture: UserModel) -> None:
+    """Anyone can sort a given user's list by when its entries were added."""
+    older = _entry(user_fixture, "Older", 5)
+    newer = _entry(user_fixture, "Newer", 5)
+    _set_times(older, days_ago_created=2, days_ago_modified=2)
+    _set_times(newer, days_ago_created=1, days_ago_modified=1)
+
+    response = api_client.get(
+        reverse("games:game-lists-list"),
+        {"user": str(user_fixture.pk), "ordering": "-created_at"},
+    )
+
+    assert _ids(response) == [newer.id, older.id]

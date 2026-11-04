@@ -134,18 +134,30 @@ class GameListFilterSet(filters.FilterSet):
         )
 
     ordering = filters.OrderingFilter(
-        fields=(("score", "score"), ("title", "title")),
+        fields=(
+            ("score", "score"),
+            ("title", "title"),
+            ("created_at", "created_at"),
+            ("last_modified_at", "last_modified_at"),
+        ),
         method="filter_ordering",
     )
 
     def filter_ordering(self, queryset: QuerySet[Any], _name: str, value: list[str]) -> QuerySet[Any]:
-        """Order by the requested `score` and/or `title` keys, in the order given.
+        """Order by the requested `score`, `title`, `created_at` and/or `last_modified_at` keys, in the order given.
+
+        `created_at` is when the entry was added to the list, `last_modified_at` when it was last edited.
 
         Unscored entries always come last, whatever the score direction. Unless `title` is itself requested, ties are
         broken by game title A-Z; `id` is always the last key, so pages stay stable. An explicit ordering replaces
         the best-match-first order of the `title` filter.
         """
-        sort_keys: dict[str, F | Coalesce] = {"score": F("score"), "title": _game_title_sort_key()}
+        sort_keys: dict[str, F | Coalesce] = {
+            "score": F("score"),
+            "title": _game_title_sort_key(),
+            "created_at": F("created_at"),
+            "last_modified_at": F("last_modified_at"),
+        }
         ordering = []
         for term in value:
             key = sort_keys[term.removeprefix("-")]

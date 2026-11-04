@@ -260,6 +260,23 @@ def test_get_game_input_maps_full_game(command_fixture: Command) -> None:
     assert result["screenshots"] == ["shot1", "shot2"]
 
 
+def test_get_game_input_maps_videos_skipping_those_without_video_id(command_fixture: Command) -> None:
+    """`_get_game_input` keeps `name`/`video_id` in IGDB order and drops videos lacking a `video_id`."""
+    item = _game(
+        1,
+        videos=[
+            {"id": 1, "name": "Trailer", "video_id": "dQw4w9WgXcQ"},
+            {"id": 2, "name": "Broken"},
+            {"id": 3, "video_id": "abc"},
+        ],
+    )
+    result = command_fixture._get_game_input(item, company_igdb_to_db_mapping={}, extra_mappings=None)  # noqa: SLF001
+    assert result["videos"] == [
+        {"name": "Trailer", "video_id": "dQw4w9WgXcQ"},
+        {"name": "", "video_id": "abc"},
+    ]
+
+
 def test_get_game_input_handles_missing_optional_fields(command_fixture: Command) -> None:
     """`_get_game_input` falls back to empty/None defaults when optional IGDB fields are absent."""
     item = _game(1, cover=None, first_release_date=None, screenshots=None, involved_companies=None)
@@ -271,6 +288,7 @@ def test_get_game_input_handles_missing_optional_fields(command_fixture: Command
     assert result["game_type"] is None
     assert result["game_status"] is None
     assert result["screenshots"] == []
+    assert result["videos"] == []
 
 
 def test_get_game_input_ignores_game_type_when_not_in_mapping(command_fixture: Command) -> None:
