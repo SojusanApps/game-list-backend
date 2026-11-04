@@ -714,6 +714,7 @@ def test_list_model(
                 "game_modes": [{"id": ANY, "name": ANY, "igdb_id": ANY, "igdb_updated_at": ANY}],
                 "player_perspectives": [{"id": ANY, "name": ANY, "igdb_id": ANY, "igdb_updated_at": ANY}],
                 "screenshots": [],
+                "videos": [],
             },
             id="Get the game by id.",
         ),

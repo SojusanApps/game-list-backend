@@ -390,6 +390,13 @@ class GameSimpleListSerializer(serializers.ModelSerializer[Game]):
         )
 
 
+class GameVideoSerializer(serializers.Serializer[Any]):
+    """A serializer for a YouTube video of a game."""
+
+    name = serializers.CharField(read_only=True)
+    video_id = serializers.CharField(read_only=True)
+
+
 class GameSerializer(serializers.ModelSerializer[Game]):
     """A serializer for the game model."""
 
@@ -411,6 +418,7 @@ class GameSerializer(serializers.ModelSerializer[Game]):
     game_modes = GameModeSerializer(many=True)
     player_perspectives = PlayerPerspectiveSerializer(many=True)
     external_games = ExternalGameSerializer(many=True)
+    videos = GameVideoSerializer(many=True, read_only=True)
 
     class Meta:
         """Meta data for game serializer."""
@@ -451,6 +459,7 @@ class GameSerializer(serializers.ModelSerializer[Game]):
             "player_perspectives",
             "external_games",
             "screenshots",
+            "videos",
             "slug",
         )
 

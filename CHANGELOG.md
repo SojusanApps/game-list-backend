@@ -2,6 +2,13 @@
 
 > Date format is DD.MM.YYYY.
 
+## v. [6.2.0] - 04.11.2026
+
+* Added `videos` to the game detail (`GET /games/{id}/`): the YouTube videos IGDB lists for the game, as `{name, video_id}` objects in IGDB's order. They are filled by the IGDB import (videos without a `video_id` are skipped) and replaced on every import; existing games get them on their next import.
+* Changed the store id resolution order of the store import: accepted Store Mappings are now checked first, then the user's own pending ones, and IGDB's external games last, so a Store Mapping can correct a wrong or ambiguous IGDB link. The first source that knows the id decides; an id it links to several games is returned as `unmatched`.
+* A pending Store Mapping is no longer recorded when IGDB links the store id to exactly the picked game and to no other; if IGDB links it to several games, the mapping is recorded.
+* Added `created_at` (when the entry was added to the list) and `last_modified_at` (when it was last edited) to the `ordering` parameter of `GET /game-lists/`, each with a `-` prefix for newest first. Ties are broken by game title A-Z unless `title` is also requested.
+
 ## v. [6.1.0] - 30.10.2026
 
 * Added the `ordering` parameter to `GET /game-reviews/`: `created_at` / `-created_at` (newest first) and `score` / `-score` (the reviewer's score for the game; unscored reviews always come last).

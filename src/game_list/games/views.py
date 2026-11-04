@@ -321,9 +321,12 @@ class GameFollowViewSet(
             OpenApiParameter(
                 name="ordering",
                 description=(
-                    "Order results by the owner's score or by game title (in the requested language, "
-                    "falling back to English). "
-                    "Accepted values: score, -score, title, -title. Prefix with '-' for descending. "
+                    "Order results by the owner's score, by game title (in the requested language, "
+                    "falling back to English), by when the entry was added to the list (created_at) "
+                    "or by when it was last edited (last_modified_at). "
+                    "Accepted values: score, -score, title, -title, created_at, -created_at, "
+                    "last_modified_at, -last_modified_at. Prefix with '-' for descending "
+                    "(e.g. `-created_at` lists the most recently added entries first). "
                     "Several values can be combined with commas, e.g. `-score,title`. "
                     "Unscored entries always come last when ordering by score. "
                     "Ties are ordered by game title A-Z (unless title is already requested), then by ID. "

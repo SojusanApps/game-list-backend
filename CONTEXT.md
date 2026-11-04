@@ -25,6 +25,10 @@ _Avoid_: dictionary model, lookup table, reference data, master data
 The process by which games are created or updated in the system by fetching data from the IGDB database. The canonical source of truth for game records. Triggers re-normalization of `search_title`.
 _Avoid_: sync, game sync, IGDB sync
 
+**Game Video**:
+A YouTube-hosted video (trailer, gameplay, etc.) attached to one `Game`, made of a display `name` and the YouTube `video_id` (e.g. `dQw4w9WgXcQ`). Comes only from **IGDB Import**, which mirrors IGDB's list for the game: videos IGDB no longer lists are dropped. Exposed read-only on the game detail, never on list or search results. The `video_id` is YouTube's id, not an IGDB id; the system does not keep IGDB's own record id for a video, and building a watch URL is left to the client.
+_Avoid_: trailer (only one kind of video), clip, media (collides with `GameMedia`)
+
 **Title Import**:
 The process by which a user imports games into their GameList from a pasted list of game titles: the user picks the correct catalogue game per title (or marks it as not found) and submits a bulk-create request. There is no dedicated title-matching endpoint; candidates come from the regular `title` filter on games. Does not create or modify game records itself.
 _Avoid_: list import, text import, paste import, manual import
@@ -75,6 +79,10 @@ _Avoid_: deleted, removed, hidden (as a synonym for the flag itself — "hidden"
 **Score** (`GameList.score`):
 The owner's own 1-10 number for a game, set per `GameList` entry. Optional: an entry can exist with no Score (a `Plan to Play` game, say), and an unscored entry means "no opinion yet" — never "0" and never "the lowest score". Independent of **Recommendation**. Distinct from a game's **average score**, the community-wide mean of every user's Score for it, which drives the game's rank in the catalogue; a user's own list is ordered by that user's Score, not by the community's.
 _Avoid_: rating, grade (for the per-entry number); rank (that is the community position derived from the average score)
+
+**Added** (`GameList.created_at`):
+The moment a game joined the user's list. Fixed at creation and never changed by later edits to the entry (score, status, notes). Distinct from **Last modified** (`GameList.last_modified_at`), the moment the entry was last saved, which moves on every edit. A list can be ordered by either: **Added** answers "what did I put on my list recently", **Last modified** answers "what did I touch recently".
+_Avoid_: updated, created (as user-facing wording), recently played (neither says anything about play activity)
 
 **Not planned** (`GameList.status = "NP"`):
 A `GameList` entry for a game the user has added to their list — most often via **Title Import** — but does not intend to ever play. Distinct from `Plan to play` (not yet played, but the user does intend to) and `Dropped` (started playing, then abandoned). The point of adding it at all, rather than leaving the game off the list, is to record that the user has or recognizes the game without claiming any intent to play it. A general status like every other `GameList.status` value: assignable and re-settable on any entry via the normal create/update flow, with `Score` remaining optional and, if set, still counted toward the game's `average score` — see [ADR-0020](docs/adr/0020-not-planned-games-count-toward-gamestats.md).
