@@ -192,6 +192,11 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
             "game_type": game_type,
             "game_status": game_status,
             "screenshots": ([s.image_id for s in item_from_igdb.screenshots] if item_from_igdb.screenshots else []),
+            "videos": (
+                [{"name": v.name, "video_id": v.video_id} for v in item_from_igdb.videos if v.video_id]
+                if item_from_igdb.videos
+                else []
+            ),
         }
 
     def _get_game_type_input(self: Self, item_from_igdb: IGDBGameTypeResponse) -> dict[str, Any]:
@@ -408,7 +413,8 @@ class Command(BaseCommand):  # NOSONAR(S8443) - Already inheriting from BaseComm
             "platforms, summary, updated_at, "
             "game_type, game_status, parent_game, "
             "bundles, dlcs, expanded_games, expansions, forks, ports, standalone_expansions, "
-            "game_engines, game_modes, player_perspectives, screenshots.image_id, external_games;"
+            "game_engines, game_modes, player_perspectives, screenshots.image_id, external_games, "
+            "videos.name, videos.video_id;"
         )
 
         collector = RecursiveDataCollector(

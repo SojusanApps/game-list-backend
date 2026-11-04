@@ -883,6 +883,11 @@ class Game(BaseModel, IGDBModel):
         blank=True,
         help_text="IGDB screenshot IDs for this game.",
     )
+    videos = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="YouTube videos of this game, as a list of {name, video_id} objects.",
+    )
 
     publisher = models.ForeignKey(
         Company,

@@ -80,6 +80,18 @@ class IGDBImageResponse(ABC):
 
 
 @dataclass
+class IGDBVideoResponse:
+    """Class representing the data structure for IGDB game video response."""
+
+    id: int
+    """The ID of the video object in IGDB."""
+    video_id: str = ""
+    """The YouTube ID of the video."""
+    name: str = ""
+    """The name of the video."""
+
+
+@dataclass
 class IGDBPlatformResponse(BaseIGDBResponse):
     """Class representing the data structure for IGDB platform response."""
 
@@ -238,6 +250,8 @@ class IGDBGameResponse(BaseIGDBResponse):
     """The list of screenshots."""
     external_games: list[int] | None = None
     """The list of external games IDs."""
+    videos: list[IGDBVideoResponse] | None = None
+    """The list of videos."""
 
     def __post_init__(self: Self) -> None:
         """Post initializer."""
@@ -257,6 +271,9 @@ class IGDBGameResponse(BaseIGDBResponse):
             self.screenshots = [
                 IGDBImageResponse(**screenshot) for screenshot in self.screenshots if isinstance(screenshot, dict)
             ]
+
+        if self.videos and isinstance(self.videos, list):
+            self.videos = [IGDBVideoResponse(**video) for video in self.videos if isinstance(video, dict)]
 
 
 class IGDBInteractionError(SojusanGameListError):

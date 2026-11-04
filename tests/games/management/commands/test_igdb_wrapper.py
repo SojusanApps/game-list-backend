@@ -26,6 +26,7 @@ from game_list.games.management.commands._igdb_wrapper import (
     IGDBInvolvedCompanyResponse,
     IGDBPlatformResponse,
     IGDBPlayerPerspectiveResponse,
+    IGDBVideoResponse,
     IGDBWrapper,
 )
 
@@ -362,6 +363,24 @@ class TestDataclassPostInit:
             IGDBImageResponse(id=31, image_id="shot-2"),
         ]
 
+    def test_game_response_casts_videos(self) -> None:
+        """Raw ``videos`` dicts are cast to ``IGDBVideoResponse``; a missing name defaults to empty."""
+        game = IGDBGameResponse(
+            id=1,
+            updated_at=0,
+            name="Some Game",
+            slug="some-game",
+            videos=[
+                {"id": 40, "name": "Trailer", "video_id": "dQw4w9WgXcQ"},  # type: ignore[list-item]
+                {"id": 41, "video_id": "abc"},  # type: ignore[list-item]
+            ],
+        )
+
+        assert game.videos == [
+            IGDBVideoResponse(id=40, name="Trailer", video_id="dQw4w9WgXcQ"),
+            IGDBVideoResponse(id=41, name="", video_id="abc"),
+        ]
+
     def test_game_response_leaves_optional_fields_as_none_when_absent(self) -> None:
         """No ``cover``/``involved_companies``/``screenshots`` provided leaves those fields as ``None``."""
         game = IGDBGameResponse(id=1, updated_at=0, name="Some Game", slug="some-game")
@@ -369,3 +388,4 @@ class TestDataclassPostInit:
         assert game.cover is None
         assert game.involved_companies is None
         assert game.screenshots is None
+        assert game.videos is None
